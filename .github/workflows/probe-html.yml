@@ -1,0 +1,25 @@
+name: Дамп разметки страницы
+
+# Ручной запуск. Показывает структуру HTML вокруг сеансов и кинотеатров,
+# чтобы парсер писался по фактической разметке.
+
+on:
+  workflow_dispatch:
+    inputs:
+      page:
+        description: 'URL страницы'
+        type: string
+        default: 'https://www.kinoafisha.info/russia/msk/schedule/'
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/probe-html.mjs
+        env:
+          PROBE_PAGE: ${{ inputs.page }}
