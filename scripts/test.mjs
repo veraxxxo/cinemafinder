@@ -3,7 +3,8 @@
 // Сеть не нужна: `node scripts/test.mjs`.
 
 import assert from 'node:assert/strict';
-import { cinemaBlocks, sessionsIn, contentOf, normalizeTitle, movieKey } from './sources/kinoafisha.mjs';
+import { normalizeTitle, movieKey } from './sources/kinoafisha.mjs';
+import { cinemaBlocks, sessionsIn, contentOf } from '../parse-showtimes.js';
 import { normName, nameTokens, timeToMinutes, jsonLd, embeddedState, stripTags } from './lib/util.mjs';
 import { msk as kudagoMsk, price as kudagoPrice, format as kudagoFormat } from './sources/kudago.mjs';
 

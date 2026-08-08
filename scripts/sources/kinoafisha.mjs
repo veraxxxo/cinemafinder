@@ -15,8 +15,10 @@
 //   1. общее расписание города за дату — один запрос на день;
 //   2. страницы отдельных фильмов — дороже, но переживает смену первой.
 
-import { stripTags } from '../lib/util.mjs';
 import { loadPage, finish } from '../lib/fetcher.mjs';
+import {
+  contentOf, cinemaBlocks, sessionsIn, stripTags,
+} from '../../parse-showtimes.js';
 
 export const id = 'kinoafisha';
 export const title = 'Кино Афиша';
@@ -33,45 +35,6 @@ const slug = (s) =>
 
 const page = (url, label) =>
   loadPage(url, { expect: /session_time|\/cinema\//, waitFor: '.session_time', label });
-
-/** Убирает всё, что не является видимой разметкой: там те же имена классов. */
-export const contentOf = (html) =>
-  html
-    .replace(/<style[\s\S]*?<\/style>/gi, '')
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/<(?:head|header|nav|footer)[\s\S]*?<\/(?:head|header|nav|footer)>/gi, '');
-
-/** Сеансы внутри куска разметки: время и, если есть, цена. */
-export function sessionsIn(chunk) {
-  const out = [];
-  for (const m of chunk.matchAll(
-    /<span[^>]*class="[^"]*session_time[^"]*"[^>]*>\s*([0-2]?\d:[0-5]\d)\s*<\/span>([\s\S]{0,220}?)(?=<span[^>]*class="[^"]*session_time|$)/g,
-  )) {
-    const priceText = /session_price[^>]*>([^<]*)</.exec(m[2] || '');
-    const price = priceText ? Number((/\d[\d\s]*/.exec(priceText[1]) || [''])[0].replace(/\s/g, '')) : null;
-    out.push({ time: m[1], price: price || null });
-  }
-  return out;
-}
-
-/**
- * Разбивает страницу на блоки «кинотеатр → его сеансы».
- * Заголовком блока считается ссылка на страницу кинотеатра.
- */
-export function cinemaBlocks(content) {
-  const anchors = [
-    ...content.matchAll(/<a[^>]+href="([^"]*\/cinema\/[^"]*)"[^>]*>([\s\S]{0,240}?)<\/a>/g),
-  ];
-  const blocks = [];
-  for (let i = 0; i < anchors.length; i++) {
-    const name = stripTags(anchors[i][2]);
-    if (!name || name.length > 90) continue;
-    const start = anchors[i].index + anchors[i][0].length;
-    const end = i + 1 < anchors.length ? anchors[i + 1].index : content.length;
-    blocks.push({ name, url: anchors[i][1], chunk: content.slice(start, end) });
-  }
-  return blocks;
-}
 
 /** Стратегия 1: общее расписание города за дату. */
 async function fromCitySchedule(date) {

@@ -1,6 +1,9 @@
 /* CinemaFinder — карта кинотеатров Москвы с фильтрами по фильму и времени. */
 'use strict';
 
+import { fetchDay } from './live.js';
+import { bestMatch } from './match.js';
+
 const MOSCOW = [55.7522, 37.6156];
 const $ = (id) => document.getElementById(id);
 
@@ -485,6 +488,95 @@ function setupControls() {
   });
 
   $('toggle-panel').addEventListener('click', () => $('panel').classList.toggle('open'));
+
+  $('refresh').addEventListener('click', refreshFromAfisha);
+}
+
+// ── Живая подгрузка ──────────────────────────────────────────────────────────
+
+/**
+ * Тянет расписание с афиши прямо из браузера и вливает в текущие данные.
+ * Сбор в GitHub Actions упирается в блокировку адресов дата-центров, а
+ * обычный домашний адрес сайты пропускают — поэтому посетитель может
+ * добрать актуальные сеансы сам.
+ */
+async function refreshFromAfisha() {
+  const button = $('refresh');
+  const note = $('refresh-note');
+  const say = (text, cls = '') => {
+    note.textContent = text;
+    note.className = cls;
+  };
+
+  button.disabled = true;
+  const date = state.date || new Date(Date.now() + 3 * 3600000).toISOString().slice(0, 10);
+
+  try {
+    say('загружаю афишу…');
+    const raw = await fetchDay(date, (p) => say(p));
+
+    say(`разбираю ${raw.length} сеансов…`);
+    const added = mergeShows(raw, date);
+
+    if (!added.shows) {
+      say('свежих сеансов не нашлось — данные и так актуальны', 'ok');
+    } else {
+      say(`добавлено ${added.shows} сеансов в ${added.cinemas} кинотеатрах` +
+          (added.skipped ? `, ${added.skipped} залов не удалось сопоставить` : ''), 'ok');
+    }
+
+    buildDateChips();
+    renderTags();
+    render();
+  } catch (err) {
+    say(`не вышло: ${err.message}`, 'err');
+  } finally {
+    button.disabled = false;
+  }
+}
+
+/** Вливает разобранные сеансы в состояние, сопоставляя залы по названию. */
+function mergeShows(raw, date) {
+  const known = new Set(state.shows.map((s) => `${s.c}|${s.m}|${s.d}|${s.t}`));
+  const cinemas = new Set();
+  const unmatched = new Set();
+  let added = 0;
+
+  for (const r of raw) {
+    const hit = bestMatch(r.cinemaName, state.cinemas);
+    if (!hit) {
+      unmatched.add(r.cinemaName);
+      continue;
+    }
+
+    const title = r.movieTitle.replace(/\s*\(\d{4}\)\s*$/, '').trim();
+    const mid = title.toLowerCase().replace(/ё/g, 'е').replace(/[^a-zа-я0-9]+/g, '-').replace(/^-|-$/g, '');
+    if (!mid) continue;
+
+    const key = `${hit.item.id}|${mid}|${date}|${r.time}`;
+    if (known.has(key)) continue;
+    known.add(key);
+
+    if (!state.movieById.has(mid)) {
+      const movie = { id: mid, title, count: 0 };
+      state.movieById.set(mid, movie);
+      state.movies.push(movie);
+    }
+    state.movieById.get(mid).count++;
+
+    state.shows.push({
+      c: hit.item.id, m: mid, d: date, t: r.time,
+      price: r.price || undefined, min: toMin(r.time),
+    });
+    cinemas.add(hit.item.id);
+    added++;
+  }
+
+  if (!state.dates.includes(date)) state.dates = [date, ...state.dates].sort();
+  state.movies.sort((a, b) => b.count - a.count);
+
+  if (unmatched.size) console.warn('Не сопоставлены с картой:', [...unmatched].join(' | '));
+  return { shows: added, cinemas: cinemas.size, skipped: unmatched.size };
 }
 
 // ── Старт ────────────────────────────────────────────────────────────────────
