@@ -5,7 +5,11 @@
 
 import { getJson, getText, stripTags, UA } from './lib/util.mjs';
 
-const OVERPASS = 'https://overpass-api.de/api/interpreter';
+const MIRRORS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
+];
 const AREA = 'rel(102269); map_to_area -> .a;';
 
 /** Варианты отбора: от текущего к всё более широким. */
@@ -25,16 +29,34 @@ const VARIANTS = {
 };
 
 async function overpass(body) {
-  const res = await fetch(OVERPASS, {
-    method: 'POST',
-    headers: { 'User-Agent': UA, 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ data: body }),
-    signal: AbortSignal.timeout(120000),
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const text = await res.text();
-  if (!text.trimStart().startsWith('{')) throw new Error('ответ не JSON');
-  return JSON.parse(text);
+  let last;
+  for (const url of MIRRORS) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'User-Agent': UA,
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Accept: 'application/json',
+        },
+        body: new URLSearchParams({ data: body }),
+        signal: AbortSignal.timeout(120000),
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        // Тело ответа — единственное место, где Overpass объясняет отказ.
+        throw new Error(`HTTP ${res.status} — ${stripTags(text).slice(0, 200)}`);
+      }
+      if (!text.trimStart().startsWith('{')) {
+        throw new Error(`ответ не JSON — ${stripTags(text).slice(0, 200)}`);
+      }
+      return JSON.parse(text);
+    } catch (err) {
+      console.log(`   [${url.split('/')[2]}] ${err.message}`);
+      last = err;
+    }
+  }
+  throw last;
 }
 
 console.log('═'.repeat(78));
@@ -95,11 +117,14 @@ try {
 
 // Сайты сетей: сколько площадок перечислено и есть ли адреса.
 const CHAINS = [
-  ['КАРО', 'https://karofilm.ru/theatres'],
   ['Формула Кино / Синема Парк', 'https://kinoteatr.ru/raspisanie-kinoteatrov/'],
-  ['Москино', 'https://mos-kino.ru/cinemas'],
-  ['Синема Стар', 'https://cinemastar.ru/'],
-  ['Каро (список залов)', 'https://karofilm.ru/api/theatres'],
+  ['Кинотеатр.ру — кинотеатры Москвы', 'https://kinoteatr.ru/kinoteatry-moskvy/'],
+  ['КАРО', 'https://karofilm.ru/theatres'],
+  ['КАРО (api)', 'https://api.karofilm.ru/cinemas'],
+  ['Москино', 'https://mos-kino.ru/'],
+  ['Москино — площадки', 'https://mos-kino.ru/theatres'],
+  ['Синема Стар', 'https://cinemastar.ru/cinemas'],
+  ['Пять звёзд', 'https://5zvezd.ru/'],
 ];
 
 for (const [name, url] of CHAINS) {
@@ -120,4 +145,20 @@ for (const [name, url] of CHAINS) {
   } catch (err) {
     console.log(`\n${name} — ОШИБКА: ${err.message}`);
   }
+}
+
+// Геокодер: адреса сетей без координат бесполезны для карты. Проверяем,
+// пускает ли Nominatim запросы с IP дата-центра (у него строгие правила).
+console.log('\n' + '═'.repeat(78));
+console.log('Геокодирование адресов');
+console.log('═'.repeat(78));
+try {
+  const q = encodeURIComponent('Москва, площадь Киевского Вокзала, 2');
+  const r = await getJson(
+    `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`,
+    { headers: { 'User-Agent': 'cinemafinder/1.0 (github.com/veraxxxo/cinemafinder)' } },
+  );
+  console.log(`\nNominatim отвечает: ${r.length ? `${r[0].lat}, ${r[0].lon} — ${r[0].display_name}` : 'пусто'}`);
+} catch (err) {
+  console.log(`\nNominatim: ОШИБКА ${err.message}`);
 }
