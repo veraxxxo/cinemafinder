@@ -1,7 +1,38 @@
 {
- "updated": "2026-08-08T13:26:55.409Z",
- "source": "OpenStreetMap / Overpass API",
- "count": 123,
+ "updated": "2026-08-08T17:12:10.345Z",
+ "source": "data/cinemas-seed.csv + OpenStreetMap (Overpass) + Nominatim",
+ "count": 160,
+ "seedTotal": 76,
+ "unresolved": [
+  "КАРО 6 Киргизия",
+  "КАРО 10 София",
+  "КАРО 6 Будапешт",
+  "КАРО 8 Саларис",
+  "КАРО 9 Vegas Каширский",
+  "Киномакс Водный",
+  "Киномакс-Релакс Пушкино",
+  "Формула Кино Авиапарк",
+  "Формула Кино Горизонт",
+  "Формула Кино Черёмушки",
+  "Люксор Весна",
+  "Люксор Гудзон",
+  "Люксор Капитолий (Подольск)",
+  "Пять звёзд Новокузнецкая",
+  "Пять звёзд Бирюлево",
+  "Синема Парк Мосфильм",
+  "Синема Парк Европейский",
+  "Москино Ангара",
+  "Москино Полёт",
+  "Москино Марс",
+  "Москино Рассвет",
+  "Москино Эльбрус",
+  "Москино Нева",
+  "35 мм",
+  "Алмаз Синема Азовский",
+  "ГЭС-2 Кино",
+  "Кинозал ГУМа",
+  "Киноцентр Октябрь"
+ ],
  "items": [
   {
    "id": "n1586978957",
@@ -10,10 +41,42 @@
    "lat": 55.852716,
    "lon": 37.585855,
    "address": "Алтуфьевское шоссе, 8",
-   "website": "https://almazcinema.ru/",
+   "website": "https://almazcinema.ru",
    "phone": "+7 495 2873217",
-   "screens": 5,
-   "opening_hours": "Mo-Su 10:00-24:00"
+   "source": "seed+osm",
+   "osmName": "Алмаз Синема Алтуфьевский"
+  },
+  {
+   "id": "n777439407",
+   "name": "Алмаз Синема Мытищи",
+   "brand": "",
+   "lat": 55.916547,
+   "lon": 37.758916,
+   "address": "Шараповский проезд, 2",
+   "website": "https://almazcinema.ru/",
+   "phone": "+7 495 6425690",
+   "source": "osm"
+  },
+  {
+   "id": "n1066348417",
+   "name": "Алмаз Синема Перловка",
+   "brand": "",
+   "lat": 55.892029,
+   "lon": 37.728116,
+   "address": "улица Селезнёва, 33",
+   "website": "https://almazcinema.ru/",
+   "phone": "+7 495 7448569",
+   "source": "osm"
+  },
+  {
+   "id": "sашхабад",
+   "name": "Ашхабад",
+   "lat": 55.624298,
+   "lon": 37.595892,
+   "address": "Кинотеатр «Ашхабад», район Чертаново Северное, Москва, Центральный федеральный округ, 117525, Россия",
+   "website": "https://ashhabad.ru",
+   "brand": "",
+   "source": "seed+geo"
   },
   {
    "id": "n2051171881",
@@ -22,10 +85,30 @@
    "lat": 55.850635,
    "lon": 37.445437,
    "address": "Сходненская улица, 56",
-   "website": "https://kinosfera-baltika.ru",
+   "website": "https://baltika-kino.ru",
    "phone": "+7 905 1828383",
-   "screens": null,
-   "opening_hours": "Mo-Fr 10:45-23:00; Sa-Su 10:10-24:00"
+   "source": "seed+osm",
+   "osmName": "Балтика"
+  },
+  {
+   "id": "sбрест",
+   "name": "Брест",
+   "lat": 55.73833,
+   "lon": 37.411978,
+   "address": "Улица Маршала Сергеева, Ярцевская улица, район Кунцево, Москва, Центральный федеральный округ, 121351, Россия",
+   "website": "https://brestfilm.ru",
+   "brand": "",
+   "source": "seed+geo"
+  },
+  {
+   "id": "sбульвар",
+   "name": "Бульвар",
+   "lat": 55.802547,
+   "lon": 37.79998,
+   "address": "Районный центр «София», Сиреневый бульвар, район Измайлово, Москва, Центральный федеральный округ, 105215, Россия",
+   "website": "https://kinobulvar.info",
+   "brand": "",
+   "source": "seed+geo"
   },
   {
    "id": "w28609004",
@@ -36,8 +119,7 @@
    "address": "площадь Ганецкого, 1",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "n5313209970",
@@ -48,8 +130,7 @@
    "address": "",
    "website": "https://zigzag.wikicinema.ru",
    "phone": "+7 499 2903709",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "n1012869269",
@@ -60,8 +141,28 @@
    "address": "",
    "website": "https://centerfilm.ru/",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
+  },
+  {
+   "id": "sвремена-года",
+   "name": "Времена года",
+   "lat": 55.723425,
+   "lon": 37.595791,
+   "address": "Времена года, 9 с20, улица Крымский Вал, район Якиманка, Москва, Центральный федеральный округ, 119049, Россия",
+   "website": "https://vremenagoda-cinema.ru",
+   "brand": "",
+   "source": "seed+geo"
+  },
+  {
+   "id": "n1091544674",
+   "name": "Галакс",
+   "brand": "",
+   "lat": 55.931315,
+   "lon": 37.495076,
+   "address": "",
+   "website": "http://www.galaks-kino.ru/",
+   "phone": "+7 495 7467980",
+   "source": "osm"
   },
   {
    "id": "n5194624041",
@@ -72,8 +173,19 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
+  },
+  {
+   "id": "n2451843150",
+   "name": "Домжур",
+   "brand": "",
+   "lat": 55.753903,
+   "lon": 37.601553,
+   "address": "",
+   "website": "https://arbatkino.ru",
+   "phone": "+7 495 6915698",
+   "source": "seed+osm",
+   "osmName": "Кинозал Домжур"
   },
   {
    "id": "n13246112883",
@@ -84,20 +196,7 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
-  },
-  {
-   "id": "n3737822327",
-   "name": "Звезда",
-   "brand": "",
-   "lat": 55.760019,
-   "lon": 37.657091,
-   "address": "улица Земляной Вал, 18/22",
-   "website": "http://mos-kino.ru/cinema_1.html",
-   "phone": "+7 495 9162805",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "n12861310275",
@@ -108,8 +207,7 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "n781048859",
@@ -118,22 +216,128 @@
    "lat": 55.748015,
    "lon": 37.645022,
    "address": "",
-   "website": "",
+   "website": "https://illuzion-cinema.ru",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "seed+osm",
+   "osmName": "Иллюзион"
+  },
+  {
+   "id": "n946578853",
+   "name": "Каро",
+   "brand": "Каро Фильм",
+   "lat": 55.41973,
+   "lon": 37.547995,
+   "address": "",
+   "website": "https://karofilm.ru/theatres/view/id/15",
+   "phone": "",
+   "source": "osm"
+  },
+  {
+   "id": "n2631048819",
+   "name": "Каро",
+   "brand": "",
+   "lat": 55.75226,
+   "lon": 37.887208,
+   "address": "",
+   "website": "https://karofilm.ru/",
+   "phone": "+7 909 9835319",
+   "source": "osm"
   },
   {
    "id": "n676517269",
-   "name": "Каро 10 Щука",
+   "name": "КАРО 10 Реутов",
    "brand": "Каро Фильм",
    "lat": 55.809691,
    "lon": 37.465423,
    "address": "Щукинская улица, 42",
-   "website": "https://karofilm.ru/theatres/view/id/12",
+   "website": "https://karofilm.ru",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "seed+osm",
+   "osmName": "Каро 10 Щука"
+  },
+  {
+   "id": "n982386557",
+   "name": "КАРО 11 Октябрь",
+   "brand": "Каро Фильм",
+   "lat": 55.752937,
+   "lon": 37.587821,
+   "address": "",
+   "website": "https://karofilm.ru",
+   "phone": "",
+   "source": "seed+osm",
+   "osmName": "Каро Фильм Октябрь"
+  },
+  {
+   "id": "n5123649226",
+   "name": "КАРО 13 Кунцево",
+   "brand": "КАРО",
+   "lat": 55.71982,
+   "lon": 37.377991,
+   "address": "",
+   "website": "https://karofilm.ru",
+   "phone": "",
+   "source": "seed+osm",
+   "osmName": "Каро 13"
+  },
+  {
+   "id": "sкаро-4-высота",
+   "name": "КАРО 4 Высота",
+   "lat": 55.740883,
+   "lon": 38.011868,
+   "address": "Высота, 4В, Автозаводская улица, 2 квартал, Железнодорожный, Балашиха, городской округ Балашиха, Московская область, Центральный федеральный округ, 143985, Россия",
+   "website": "https://karofilm.ru",
+   "brand": "",
+   "source": "seed+geo"
+  },
+  {
+   "id": "sкаро-4-подольск",
+   "name": "КАРО 4 Подольск",
+   "lat": 55.435474,
+   "lon": 37.562956,
+   "address": "ПГК Дзержинец, 4, Подольск, городской округ Подольск, Московская область, Центральный федеральный округ, 142100, Россия",
+   "website": "https://karofilm.ru",
+   "brand": "",
+   "source": "seed+geo"
+  },
+  {
+   "id": "sкаро-5-иридиум-зеленоград",
+   "name": "КАРО 5 Иридиум (Зеленоград)",
+   "lat": 55.98267,
+   "lon": 37.175413,
+   "address": "КАРО 5 Иридиум, 1, Крюковская площадь, район Силино, Зеленоград, Москва, Центральный федеральный округ, 124575, Россия",
+   "website": "https://karofilm.ru",
+   "brand": "",
+   "source": "seed+geo"
+  },
+  {
+   "id": "sкаро-6-севастопольский",
+   "name": "КАРО 6 Севастопольский",
+   "lat": 55.691011,
+   "lon": 37.605684,
+   "address": "Хинкали, 6, Севастопольский проспект, Канатчиково, Донской район, Москва, Центральный федеральный округ, 117152, Россия",
+   "website": "https://karofilm.ru",
+   "brand": "",
+   "source": "seed+geo"
+  },
+  {
+   "id": "sкаро-6-щука",
+   "name": "КАРО 6 Щука",
+   "lat": 55.800572,
+   "lon": 37.473055,
+   "address": "район Щукино, Москва, Центральный федеральный округ, Россия",
+   "website": "https://karofilm.ru",
+   "brand": "",
+   "source": "seed+geo"
+  },
+  {
+   "id": "sкаро-7-атриум",
+   "name": "КАРО 7 Атриум",
+   "lat": 55.757895,
+   "lon": 37.658887,
+   "address": "Каро Фильм, 33, улица Земляной Вал, Бауманка, Басманный район, Москва, Центральный федеральный округ, 105064, Россия",
+   "website": "https://karofilm.ru",
+   "brand": "",
+   "source": "seed+geo"
   },
   {
    "id": "n6525092438",
@@ -144,8 +348,17 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
+  },
+  {
+   "id": "sкаро-8-южное-бутово",
+   "name": "КАРО 8 Южное Бутово",
+   "lat": 55.541272,
+   "lon": 37.532539,
+   "address": "район Южное Бутово, Москва, Центральный федеральный округ, Россия",
+   "website": "https://karofilm.ru",
+   "brand": "",
+   "source": "seed+geo"
   },
   {
    "id": "n450115731",
@@ -156,92 +369,31 @@
    "address": "Крюковская площадь, 1",
    "website": "https://karofilm.ru/theatres?id=6",
    "phone": "+7 495 5450505",
-   "screens": 4,
-   "opening_hours": "10:00-05:00"
-  },
-  {
-   "id": "n524465280",
-   "name": "Каро Фильм",
-   "brand": "Каро Фильм",
-   "lat": 55.68837,
-   "lon": 37.604612,
-   "address": "",
-   "website": "https://karofilm.ru/theatres/view/id/9",
-   "phone": "",
-   "screens": null,
-   "opening_hours": ""
-  },
-  {
-   "id": "n524512029",
-   "name": "Каро Фильм",
-   "brand": "Каро Фильм",
-   "lat": 55.757895,
-   "lon": 37.658887,
-   "address": "",
-   "website": "https://karofilm.ru/theatres?id=3",
-   "phone": "+7 903 6222355",
-   "screens": 7,
-   "opening_hours": "Mo-Su 10:00-04:00"
-  },
-  {
-   "id": "n767185669",
-   "name": "Каро Фильм",
-   "brand": "Каро Фильм",
-   "lat": 55.887942,
-   "lon": 37.588957,
-   "address": "",
-   "website": "https://karofilm.ru/theatres/view/id/4",
-   "phone": "",
-   "screens": null,
-   "opening_hours": ""
-  },
-  {
-   "id": "n1754145121",
-   "name": "Каро Фильм",
-   "brand": "Каро Фильм",
-   "lat": 55.80394,
-   "lon": 37.618339,
-   "address": "",
-   "website": "https://karofilm.ru/theatres/view/id/1",
-   "phone": "",
-   "screens": null,
-   "opening_hours": "Mo-Su 10:00-23:00"
-  },
-  {
-   "id": "n523329016",
-   "name": "Каро Фильм на Вернадского",
-   "brand": "Каро Фильм",
-   "lat": 55.69191,
-   "lon": 37.529581,
-   "address": "",
-   "website": "https://karofilm.ru/theatres/view/id/8",
-   "phone": "",
-   "screens": null,
-   "opening_hours": ""
-  },
-  {
-   "id": "n982386557",
-   "name": "Каро Фильм Октябрь",
-   "brand": "Каро Фильм",
-   "lat": 55.752937,
-   "lon": 37.587821,
-   "address": "",
-   "website": "https://karofilm.ru/theatres/view/id/10",
-   "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "n5194916829",
-   "name": "Каро Sky 17",
+   "name": "КАРО Sky 17",
    "brand": "",
    "lat": 55.789359,
    "lon": 37.534264,
    "address": "",
    "website": "https://karofilm.ru",
    "phone": "+7 495 369-90-74",
-   "screens": null,
-   "opening_hours": "Mo-Su 09:00-05:00"
+   "source": "seed+osm",
+   "osmName": "Каро Sky 17"
+  },
+  {
+   "id": "n5198807695",
+   "name": "КАРО Vegas 22",
+   "brand": "",
+   "lat": 55.821053,
+   "lon": 37.386453,
+   "address": "",
+   "website": "https://karofilm.ru",
+   "phone": "+7 903 2088395",
+   "source": "seed+osm",
+   "osmName": "Каро Vegas 22"
   },
   {
    "id": "n3561637967",
@@ -250,10 +402,9 @@
    "lat": 56.009059,
    "lon": 37.202867,
    "address": "",
-   "website": "",
+   "website": "https://vk.com/kinematografclub",
    "phone": "+7 915 3153499",
-   "screens": 1,
-   "opening_hours": "Su-Th 16:00-01:00; Fr-Sa 16:00-03:00"
+   "source": "osm"
   },
   {
    "id": "n5216077221",
@@ -264,8 +415,7 @@
    "address": "Пресненская набережная, 5",
    "website": "http://www.formulakino.ru",
    "phone": "+7 800 2508025",
-   "screens": null,
-   "opening_hours": "Mo-Su 10:00-03:00"
+   "source": "osm"
   },
   {
    "id": "n5198807692",
@@ -276,44 +426,40 @@
    "address": "",
    "website": "https://msk.kinohouse.me/",
    "phone": "+7 499 9555676",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
-   "id": "n11809152330",
-   "name": "Кино Хауз",
+   "id": "n3225686057",
+   "name": "КиноГалактика",
    "brand": "",
-   "lat": 55.766191,
-   "lon": 37.632242,
+   "lat": 55.690814,
+   "lon": 37.303251,
    "address": "",
-   "website": "https://msk.kinohouse.me",
+   "website": "http://kino-galaktika.ru/",
    "phone": "",
-   "screens": null,
-   "opening_hours": "Mo-Th,Su 12:00-24:00; Fr-Sa 12:00-06:00"
+   "source": "osm"
   },
   {
-   "id": "n6018813888",
+   "id": "n940747218",
    "name": "Киноград",
    "brand": "",
-   "lat": 55.594536,
-   "lon": 37.352168,
-   "address": "улица Хабарова, 2",
-   "website": "",
-   "phone": "",
-   "screens": null,
-   "opening_hours": "Mo-Su 09:00-02:00"
+   "lat": 55.632948,
+   "lon": 37.2124,
+   "address": "",
+   "website": "http://cinema-grad.ru/",
+   "phone": "+7 495 6044461",
+   "source": "osm"
   },
   {
-   "id": "n2451843150",
-   "name": "Кинозал Домжур",
+   "id": "n4976215619",
+   "name": "Кинодворик",
    "brand": "",
-   "lat": 55.753903,
-   "lon": 37.601553,
+   "lat": 55.75014,
+   "lon": 37.958408,
    "address": "",
-   "website": "http://www.arbatkino.ru",
-   "phone": "+7 495 6915698",
-   "screens": null,
-   "opening_hours": ""
+   "website": "",
+   "phone": "",
+   "source": "osm"
   },
   {
    "id": "n3824759924",
@@ -324,8 +470,7 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": 7,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "n2400977903",
@@ -336,20 +481,29 @@
    "address": "",
    "website": "http://www.fitil-club.ru",
    "phone": "+7 495 2870211",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
-   "id": "w35766553",
-   "name": "Киноклуб-музей \"Эльдар\"",
+   "id": "n4811334460",
+   "name": "Киноконцертный зал",
    "brand": "",
-   "lat": 55.66525,
-   "lon": 37.513424,
-   "address": "Ленинский проспект, 105",
-   "website": "https://kinoklub-eldar.ru/",
-   "phone": "+7 495 7359944",
-   "screens": null,
-   "opening_hours": "Mo-Su 09:00-23:45"
+   "lat": 55.764235,
+   "lon": 36.948826,
+   "address": "",
+   "website": "",
+   "phone": "",
+   "source": "osm"
+  },
+  {
+   "id": "n4703304999",
+   "name": "Киномакс",
+   "brand": "",
+   "lat": 55.799613,
+   "lon": 37.273066,
+   "address": "",
+   "website": "",
+   "phone": "",
+   "source": "osm"
   },
   {
    "id": "n4749577356",
@@ -360,8 +514,7 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "n6187377489",
@@ -372,8 +525,30 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
+  },
+  {
+   "id": "n4779812989",
+   "name": "Киномакс Мозаика",
+   "brand": "",
+   "lat": 55.7107,
+   "lon": 37.674603,
+   "address": "7-я Кожуховская улица, 9",
+   "website": "https://kinomax.ru",
+   "phone": "",
+   "source": "seed+osm",
+   "osmName": "Киномакс-Мозаика"
+  },
+  {
+   "id": "n534745327",
+   "name": "Киномакс Октябрь",
+   "brand": "",
+   "lat": 55.677156,
+   "lon": 37.895337,
+   "address": "",
+   "website": "https://kinomax.ru/",
+   "phone": "",
+   "source": "osm"
   },
   {
    "id": "n5198957112",
@@ -382,10 +557,20 @@
    "lat": 55.612335,
    "lon": 37.607154,
    "address": "",
-   "website": "",
+   "website": "https://kinomax.ru",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "seed+osm",
+   "osmName": "Киномакс Пражская"
+  },
+  {
+   "id": "sкиномакс-рига-молл",
+   "name": "Киномакс Рига Молл",
+   "lat": 55.799521,
+   "lon": 37.27366,
+   "address": "Торгово-развлекательный центр \"Рига Молл\", 2, Сосновая улица, КП «Новоархангельское», Красногорск, городской округ Красногорск, Московская область, Центральный федеральный округ, 143420, Россия",
+   "website": "https://kinomax.ru",
+   "brand": "",
+   "source": "seed+geo"
   },
   {
    "id": "n601257672",
@@ -394,10 +579,32 @@
    "lat": 55.660414,
    "lon": 37.751866,
    "address": "",
-   "website": "https://kinomax.ru/",
+   "website": "https://kinomax.ru",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "seed+osm",
+   "osmName": "Киномакс Солярис"
+  },
+  {
+   "id": "n8108942718",
+   "name": "Киномакс Титан",
+   "brand": "",
+   "lat": 55.621451,
+   "lon": 37.714425,
+   "address": "Каширское шоссе, 61Г",
+   "website": "https://kinomax.ru",
+   "phone": "",
+   "source": "seed+osm",
+   "osmName": "Киномакс-Титан"
+  },
+  {
+   "id": "sкиномакс-xl",
+   "name": "Киномакс XL",
+   "lat": 55.863296,
+   "lon": 37.54658,
+   "address": "Киномакс XL, Коровинское шоссе, район Западное Дегунино, Москва, Центральный федеральный округ, 125504, Россия",
+   "website": "https://kinomax.ru",
+   "brand": "",
+   "source": "seed+geo"
   },
   {
    "id": "n293426006",
@@ -408,32 +615,7 @@
    "address": "",
    "website": "https://kinomax.ru/",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
-  },
-  {
-   "id": "n4779812989",
-   "name": "Киномакс-Мозаика",
-   "brand": "",
-   "lat": 55.7107,
-   "lon": 37.674603,
-   "address": "7-я Кожуховская улица, 9",
-   "website": "https://kinomax.ru/",
-   "phone": "",
-   "screens": null,
-   "opening_hours": "10:00-01:00"
-  },
-  {
-   "id": "n8108942718",
-   "name": "Киномакс-Титан",
-   "brand": "",
-   "lat": 55.621451,
-   "lon": 37.714425,
-   "address": "Каширское шоссе, 61Г",
-   "website": "https://m.kinomax.ru/cinema/titan",
-   "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "n11096369799",
@@ -444,20 +626,61 @@
    "address": "",
    "website": "https://kinoteatr.ru/depo-cinemapark/#",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
+  },
+  {
+   "id": "n603033150",
+   "name": "Киностар Де Люкс",
+   "brand": "KinoStar",
+   "lat": 55.910586,
+   "lon": 37.395175,
+   "address": "Ленинградское шоссе",
+   "website": "https://www.kinostardelux.ru/",
+   "phone": "",
+   "source": "osm"
+  },
+  {
+   "id": "n635267619",
+   "name": "Киностар Нью-Йорк",
+   "brand": "KinoStar",
+   "lat": 55.659027,
+   "lon": 37.844999,
+   "address": "МКАД, 14-й километр",
+   "website": "http://www.cinemapark.ru",
+   "phone": "+7 495 6444111",
+   "source": "osm"
+  },
+  {
+   "id": "sкиносфера-imax",
+   "name": "Киносфера IMAX",
+   "lat": 55.880841,
+   "lon": 37.448856,
+   "address": "Nescafe-IMAX, 1Б, Правобережная улица, район Левобережный, Москва, Центральный федеральный округ, 125445, Россия",
+   "website": "https://cinemasphere.ru",
+   "brand": "",
+   "source": "seed+geo"
   },
   {
    "id": "w440661733",
    "name": "Кинотеатр-лекторий",
    "brand": "",
-   "lat": 55.835642,
-   "lon": 37.627966,
+   "lat": 55.835636,
+   "lon": 37.627955,
    "address": "",
    "website": "https://znanie.vdnh.ru/",
    "phone": "",
-   "screens": null,
-   "opening_hours": "Oct-Apr: closed"
+   "source": "osm"
+  },
+  {
+   "id": "n267937596",
+   "name": "Киноцентр \"Союз\"",
+   "brand": "",
+   "lat": 55.644941,
+   "lon": 38.00518,
+   "address": "",
+   "website": "",
+   "phone": "",
+   "source": "osm"
   },
   {
    "id": "n1157463818",
@@ -468,8 +691,7 @@
    "address": "Азовская улица, 24 к3",
    "website": "https://almazcinema.ru/",
    "phone": "+7 495 7354013",
-   "screens": 4,
-   "opening_hours": "Mo-Su 09:30-24:00"
+   "source": "osm"
   },
   {
    "id": "n2661667231",
@@ -480,44 +702,29 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": "Mo-Fr 10:00-01:00; Sa 09:00-01:00,Su 09:00-24:00"
+   "source": "osm"
   },
   {
-   "id": "n1179865609",
-   "name": "Кронверк Синема Лефортово",
+   "id": "n350421302",
+   "name": "Костино",
    "brand": "",
-   "lat": 55.746801,
-   "lon": 37.706225,
+   "lat": 55.915221,
+   "lon": 37.85534,
    "address": "",
-   "website": "https://kinoteatr.ru/raspisanie-kinoteatrov/lefortovo/",
+   "website": "https://kostino.com/",
    "phone": "",
-   "screens": 8,
-   "opening_hours": ""
-  },
-  {
-   "id": "n1806510998",
-   "name": "Кронверк Синема Семеновский",
-   "brand": "",
-   "lat": 55.783077,
-   "lon": 37.7202,
-   "address": "",
-   "website": "https://kinoteatr.ru",
-   "phone": "",
-   "screens": null,
-   "opening_hours": "Mo-Fr 09:30-03:00; Sa-Su 09:30-04:00"
+   "source": "osm"
   },
   {
    "id": "n440956477",
    "name": "Кронверк-Синема Облака",
    "brand": "",
-   "lat": 55.611746,
-   "lon": 37.732069,
+   "lat": 55.611752,
+   "lon": 37.732152,
    "address": "",
    "website": "http://www.kronverkcinema.ru/",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "w28852204",
@@ -528,44 +735,29 @@
    "address": "проспект Мира, 119 с541",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
-   "id": "n13136418958",
+   "id": "w35014609",
+   "name": "Ленинград",
+   "brand": "",
+   "lat": 55.798861,
+   "lon": 37.513248,
+   "address": "Новопесчаная улица, 12",
+   "website": "",
+   "phone": "",
+   "source": "osm"
+  },
+  {
+   "id": "n7848638696",
    "name": "Летний кинотеатр",
    "brand": "",
-   "lat": 55.802905,
-   "lon": 37.418943,
+   "lat": 55.751937,
+   "lon": 37.866499,
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
-  },
-  {
-   "id": "w422133335",
-   "name": "Летний кинотеатр",
-   "brand": "",
-   "lat": 55.751168,
-   "lon": 37.484081,
-   "address": "",
-   "website": "https://parkfili.com",
-   "phone": "",
-   "screens": null,
-   "opening_hours": ""
-  },
-  {
-   "id": "w629125147",
-   "name": "Летний кинотеатр",
-   "brand": "",
-   "lat": 55.627617,
-   "lon": 37.785113,
-   "address": "",
-   "website": "",
-   "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "n6938602185",
@@ -576,8 +768,40 @@
    "address": "",
    "website": "https://lordcinema.ru",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
+  },
+  {
+   "id": "n986677992",
+   "name": "Люксор",
+   "brand": "Люксор",
+   "lat": 55.604565,
+   "lon": 38.082475,
+   "address": "",
+   "website": "https://luxorfilm.ru/cinema/jukovsky1",
+   "phone": "+7 495 9260331",
+   "source": "osm"
+  },
+  {
+   "id": "n1770866966",
+   "name": "Люксор",
+   "brand": "Люксор",
+   "lat": 55.585218,
+   "lon": 37.725968,
+   "address": "",
+   "website": "https://www.luxorfilm.ru/cinema/vegas/",
+   "phone": "",
+   "source": "osm"
+  },
+  {
+   "id": "n2937777155",
+   "name": "Люксор",
+   "brand": "",
+   "lat": 55.912593,
+   "lon": 37.586146,
+   "address": "",
+   "website": "https://www.luxorfilm.ru/",
+   "phone": "",
+   "source": "osm"
   },
   {
    "id": "n3032992933",
@@ -588,8 +812,7 @@
    "address": "",
    "website": "https://www.luxorfilm.ru/",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "n4235272602",
@@ -600,20 +823,29 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
-   "id": "n2515999667",
-   "name": "Мир искусства",
+   "id": "n2386052921",
+   "name": "Матрица",
+   "brand": "Матрица-Домодедово",
+   "lat": 55.451725,
+   "lon": 37.763479,
+   "address": "Каширское шоссе, 3А",
+   "website": "https://www.matrix-cinema.ru/",
+   "phone": "+7 495 7839777",
+   "source": "osm"
+  },
+  {
+   "id": "n2341847761",
+   "name": "Мир",
    "brand": "",
-   "lat": 55.777423,
-   "lon": 37.600448,
+   "lat": 55.908354,
+   "lon": 36.861089,
    "address": "",
-   "website": "http://www.chronotop.ru",
-   "phone": "+7 499 9786619",
-   "screens": null,
-   "opening_hours": ""
+   "website": "",
+   "phone": "+7 498 3151671",
+   "source": "osm"
   },
   {
    "id": "n5198957111",
@@ -624,8 +856,7 @@
    "address": "",
    "website": "https://mirage.ru/",
    "phone": "+7 800 5051785;+7 812 6776060",
-   "screens": null,
-   "opening_hours": "Mo-Su 10:30-23:00"
+   "source": "osm"
   },
   {
    "id": "n10823686908",
@@ -636,8 +867,7 @@
    "address": "",
    "website": "https://www.mirage.ru/",
    "phone": "+7 800 5051785;+7 812 6776060",
-   "screens": null,
-   "opening_hours": "Mo-Su 10:30-24:00"
+   "source": "osm"
   },
   {
    "id": "n10843217531",
@@ -648,8 +878,7 @@
    "address": "",
    "website": "https://www.mirage.ru/",
    "phone": "+7 800 5051785;+7 812 6776060",
-   "screens": null,
-   "opening_hours": "Mo-Su 10:30-24:00"
+   "source": "osm"
   },
   {
    "id": "r18104831",
@@ -660,8 +889,7 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "n3218033069",
@@ -672,8 +900,7 @@
    "address": "",
    "website": "http://cinema.moscow",
    "phone": "+7 495 7301031",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "w220594547",
@@ -684,8 +911,7 @@
    "address": "Митьковский проезд, 8",
    "website": "https://mos-kino.ru/cinema/moskino_sokolniki/",
    "phone": "",
-   "screens": null,
-   "opening_hours": "Mo-Su 20:30-24:00"
+   "source": "osm"
   },
   {
    "id": "w29447906",
@@ -694,10 +920,10 @@
    "lat": 55.749864,
    "lon": 37.802581,
    "address": "Мартеновская улица, 25",
-   "website": "https://mos-kino.ru/cinema_17.html",
+   "website": "https://moskino.ru",
    "phone": "+7 495 3020362",
-   "screens": 1,
-   "opening_hours": "Mo-Su 10:00-22:00"
+   "source": "seed+osm",
+   "osmName": "Москино Берёзка"
   },
   {
    "id": "n1108372723",
@@ -706,10 +932,10 @@
    "lat": 55.861902,
    "lon": 37.676609,
    "address": "",
-   "website": "",
+   "website": "https://moskino.ru",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "seed+osm",
+   "osmName": "Москино Вымпел"
   },
   {
    "id": "n13272958452",
@@ -720,20 +946,41 @@
    "address": "",
    "website": "https://mos-kino.ru/",
    "phone": "+7 (499) 492-81-25",
-   "screens": null,
-   "opening_hours": "10:00-22:00"
+   "source": "osm"
   },
   {
-   "id": "n2552147024",
+   "id": "n3737822327",
+   "name": "Москино Звезда",
+   "brand": "",
+   "lat": 55.760019,
+   "lon": 37.657091,
+   "address": "улица Земляной Вал, 18/22",
+   "website": "https://moskino.ru",
+   "phone": "+7 495 9162805",
+   "source": "seed+osm",
+   "osmName": "Звезда"
+  },
+  {
+   "id": "n422924067",
    "name": "Москино Искра",
-   "brand": "Кинообъединение для детей и молодежи",
-   "lat": 55.81447,
-   "lon": 37.571152,
+   "brand": "",
+   "lat": 55.55255,
+   "lon": 37.706256,
    "address": "",
-   "website": "http://mos-kino.ru/cinema_19.html",
-   "phone": "+7 499 9761444",
-   "screens": null,
-   "opening_hours": "Mo-Su 09:00-22:30"
+   "website": "https://moskino.ru",
+   "phone": "",
+   "source": "seed+osm",
+   "osmName": "Искра"
+  },
+  {
+   "id": "sмоскино-космос",
+   "name": "Москино Космос",
+   "lat": 55.818694,
+   "lon": 37.636754,
+   "address": "Москино Космос, 109, проспект Мира (дублёр), Останкинский район, Москва, Центральный федеральный округ, 129366, Россия",
+   "website": "https://moskino.ru",
+   "brand": "",
+   "source": "seed+geo"
   },
   {
    "id": "w39524473",
@@ -742,10 +989,10 @@
    "lat": 55.71086,
    "lon": 37.731275,
    "address": "Люблинская улица, 11",
-   "website": "",
+   "website": "https://moskino.ru",
    "phone": "",
-   "screens": null,
-   "opening_hours": "Mo-Su 09:00-22:00"
+   "source": "seed+osm",
+   "osmName": "Москино Молодёжный"
   },
   {
    "id": "n512008317",
@@ -754,10 +1001,10 @@
    "lat": 55.6828,
    "lon": 37.571363,
    "address": "",
-   "website": "",
+   "website": "https://moskino.ru",
    "phone": "",
-   "screens": null,
-   "opening_hours": "Mo-Su 10:00-22:00"
+   "source": "seed+osm",
+   "osmName": "Москино Салют"
   },
   {
    "id": "r16329026",
@@ -766,10 +1013,10 @@
    "lat": 55.85195,
    "lon": 37.647543,
    "address": "Снежная улица, 18",
-   "website": "",
+   "website": "https://moskino.ru",
    "phone": "",
-   "screens": null,
-   "opening_hours": "Mo-Su 10:00-22:00"
+   "source": "seed+osm",
+   "osmName": "Москино Сатурн"
   },
   {
    "id": "w56008411",
@@ -778,10 +1025,10 @@
    "lat": 55.764375,
    "lon": 37.705589,
    "address": "Солдатская улица, 15",
-   "website": "",
+   "website": "https://moskino.ru",
    "phone": "+7 495 3612919",
-   "screens": null,
-   "opening_hours": "10:00-22:00"
+   "source": "seed+osm",
+   "osmName": "Москино Спутник"
   },
   {
    "id": "w39584183",
@@ -790,10 +1037,10 @@
    "lat": 55.685861,
    "lon": 37.718624,
    "address": "улица Кухмистерова, 4",
-   "website": "",
+   "website": "https://moskino.ru",
    "phone": "+7 495 3543094",
-   "screens": null,
-   "opening_hours": ""
+   "source": "seed+osm",
+   "osmName": "Москино Тула"
   },
   {
    "id": "n6679894139",
@@ -802,10 +1049,10 @@
    "lat": 55.751789,
    "lon": 37.716148,
    "address": "шоссе Энтузиастов, 15/16",
-   "website": "https://mos-kino.ru/cinema_7.html",
+   "website": "https://moskino.ru",
    "phone": "",
-   "screens": null,
-   "opening_hours": "Mo-Su 10:00-22:00"
+   "source": "seed+osm",
+   "osmName": "Москино Факел"
   },
   {
    "id": "n1261968437",
@@ -814,10 +1061,10 @@
    "lat": 55.79543,
    "lon": 37.495403,
    "address": "",
-   "website": "https://mos-kino.ru/cinema_24.html",
+   "website": "https://moskino.ru",
    "phone": "",
-   "screens": null,
-   "opening_hours": "Mo-Su 10:00-22:00"
+   "source": "seed+osm",
+   "osmName": "Москино Юность"
   },
   {
    "id": "n5812677558",
@@ -828,8 +1075,7 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "w355094030",
@@ -840,8 +1086,7 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "n4120987852",
@@ -852,8 +1097,7 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "n1374820153",
@@ -862,22 +1106,10 @@
    "lat": 55.745089,
    "lon": 37.54997,
    "address": "Кутузовский проспект, 21",
-   "website": "https://www.pioner-cinema.ru/",
+   "website": "https://pioner-cinema.ru",
    "phone": "+7 499 240-52-40",
-   "screens": null,
-   "opening_hours": "Mo-Su 10:00-00:00"
-  },
-  {
-   "id": "w136161354",
-   "name": "Плюс Дача",
-   "brand": "",
-   "lat": 55.726364,
-   "lon": 37.598725,
-   "address": "улица Крымский Вал, 9",
-   "website": "https://plus.yandex.ru/dacha",
-   "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "seed+osm",
+   "osmName": "Пионер"
   },
   {
    "id": "n4559963601",
@@ -886,10 +1118,10 @@
    "lat": 55.734577,
    "lon": 37.670785,
    "address": "",
-   "website": "",
+   "website": "https://pobeda-kinozal.ru",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "seed+osm",
+   "osmName": "Победа"
   },
   {
    "id": "n1467987273",
@@ -900,8 +1132,18 @@
    "address": "",
    "website": "",
    "phone": "+7 495 6474949",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
+  },
+  {
+   "id": "r1763313",
+   "name": "Пять Звёзд",
+   "brand": "",
+   "lat": 55.921353,
+   "lon": 37.991862,
+   "address": "площадь Ленина, 2А",
+   "website": "",
+   "phone": "",
+   "source": "osm"
   },
   {
    "id": "n795888754",
@@ -912,20 +1154,19 @@
    "address": "Большой Овчинниковский переулок, 16",
    "website": "http://www.5zvezd.ru/",
    "phone": "+7 495 9169169;+7 495 5102888",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "n560539620",
-   "name": "Пять звезд на Павелецкой",
+   "name": "Пять звёзд на Павелецкой",
    "brand": "",
    "lat": 55.73294,
    "lon": 37.637167,
    "address": "",
-   "website": "http://www.5zvezd.ru",
+   "website": "https://5zvezd.ru",
    "phone": "",
-   "screens": 5,
-   "opening_hours": ""
+   "source": "seed+osm",
+   "osmName": "Пять звезд на Павелецкой"
   },
   {
    "id": "n5195861608",
@@ -936,8 +1177,30 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": "09:00-22:00"
+   "source": "osm"
+  },
+  {
+   "id": "n897218016",
+   "name": "Релизпарк Зеленоград",
+   "brand": "",
+   "lat": 56.184738,
+   "lon": 36.976709,
+   "address": "",
+   "website": "https://relizpark.ru",
+   "phone": "+7 925 1838499",
+   "source": "seed+osm",
+   "osmName": "Релизпарк"
+  },
+  {
+   "id": "w25912383",
+   "name": "Родина",
+   "brand": "",
+   "lat": 55.781609,
+   "lon": 37.71788,
+   "address": "Семёновская площадь, 5",
+   "website": "",
+   "phone": "",
+   "source": "osm"
   },
   {
    "id": "n2562927544",
@@ -948,8 +1211,7 @@
    "address": "",
    "website": "http://www.romanov-cinema.ru",
    "phone": "+7 495 6096454",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "n8780399412",
@@ -960,8 +1222,18 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
+  },
+  {
+   "id": "n1870442967",
+   "name": "Светофор",
+   "brand": "",
+   "lat": 55.692124,
+   "lon": 37.896335,
+   "address": "",
+   "website": "",
+   "phone": "",
+   "source": "osm"
   },
   {
    "id": "r9202299",
@@ -972,8 +1244,7 @@
    "address": "улица Трофимова, 17",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "n946790497",
@@ -984,20 +1255,7 @@
    "address": "",
    "website": "https://www.sezonkino.ru/",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
-  },
-  {
-   "id": "n677515447",
-   "name": "Синема Люкс",
-   "brand": "",
-   "lat": 55.731669,
-   "lon": 37.486949,
-   "address": "",
-   "website": "",
-   "phone": "",
-   "screens": null,
-   "opening_hours": "Mo-Fr 12:00-03:00, Sa,Su 11:00-03:00"
+   "source": "osm"
   },
   {
    "id": "n546665314",
@@ -1008,8 +1266,7 @@
    "address": "",
    "website": "http://www.cinemapark.ru/",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "n4116064670",
@@ -1020,8 +1277,28 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
+  },
+  {
+   "id": "n5198807694",
+   "name": "Синема Парк Белая Дача",
+   "brand": "",
+   "lat": 55.658495,
+   "lon": 37.843439,
+   "address": "",
+   "website": "",
+   "phone": "",
+   "source": "osm"
+  },
+  {
+   "id": "sсинема-парк-красногорск",
+   "name": "Синема Парк Красногорск",
+   "lat": 55.841794,
+   "lon": 37.345427,
+   "address": "Митино Парк, Брусчатый посёлок, Красногорск, городской округ Красногорск, Московская область, Центральный федеральный округ, 143405, Россия",
+   "website": "https://kinoteatr.ru",
+   "brand": "",
+   "source": "seed+geo"
   },
   {
    "id": "n479731681",
@@ -1032,8 +1309,7 @@
    "address": "",
    "website": "http://www.cinemapark.ru/",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "r6578557",
@@ -1044,8 +1320,7 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": 11,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "n612933375",
@@ -1056,8 +1331,7 @@
    "address": "",
    "website": "https://kinoteatr.ru/",
    "phone": "+7 800 7000111",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "n1430908417",
@@ -1068,8 +1342,7 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": "Su-Th 10:00-02:00, Fr,Sa 10:00-04:00"
+   "source": "osm"
   },
   {
    "id": "n524465320",
@@ -1080,8 +1353,7 @@
    "address": "",
    "website": "http://www.cinema-star.ru/",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "n1267909161",
@@ -1092,8 +1364,7 @@
    "address": "",
    "website": "https://cinemastar.ru/",
    "phone": "+7 495 9880333",
-   "screens": null,
-   "opening_hours": "Mo-Su 10:00-00:00"
+   "source": "osm"
   },
   {
    "id": "n2838521761",
@@ -1104,8 +1375,7 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "n5198957114",
@@ -1116,32 +1386,7 @@
    "address": "",
    "website": "https://cinemastar.ru/",
    "phone": "",
-   "screens": null,
-   "opening_hours": "Mo-Su 10:00-23:00"
-  },
-  {
-   "id": "n5198957115",
-   "name": "Синема Стар \"Принц Плаза\"",
-   "brand": "",
-   "lat": 55.618275,
-   "lon": 37.507169,
-   "address": "",
-   "website": "",
-   "phone": "",
-   "screens": null,
-   "opening_hours": ""
-  },
-  {
-   "id": "n677515453",
-   "name": "Синема Стар Ереван Плаза",
-   "brand": "",
-   "lat": 55.707931,
-   "lon": 37.621884,
-   "address": "",
-   "website": "http://www.cinema-star.ru/",
-   "phone": "",
-   "screens": null,
-   "opening_hours": "Su-We 10:00-24:00, Th-Sa 10:00-03:00"
+   "source": "osm"
   },
   {
    "id": "n4324662691",
@@ -1152,8 +1397,29 @@
    "address": "",
    "website": "https://cinemastar.ru/",
    "phone": "+7 495 9880333",
-   "screens": null,
-   "opening_hours": "Mo-Su 10:00-24:00"
+   "source": "osm"
+  },
+  {
+   "id": "sсинема-стар-на-дмитровском",
+   "name": "Синема Стар на Дмитровском",
+   "lat": 55.828589,
+   "lon": 37.571999,
+   "address": "На Дмитровском, Дмитровское шоссе, Тимирязевский район, Москва, Центральный федеральный округ, 127343, Россия",
+   "website": "https://cinemastar.ru",
+   "brand": "",
+   "source": "seed+geo"
+  },
+  {
+   "id": "n5198957115",
+   "name": "Синема Стар Принц Плаза",
+   "brand": "",
+   "lat": 55.618275,
+   "lon": 37.507169,
+   "address": "",
+   "website": "https://cinemastar.ru",
+   "phone": "",
+   "source": "seed+osm",
+   "osmName": "Синема Стар \"Принц Плаза\""
   },
   {
    "id": "n4465076392",
@@ -1164,8 +1430,7 @@
    "address": "Киевское шоссе",
    "website": "https://cinemastar.ru/",
    "phone": "",
-   "screens": null,
-   "opening_hours": "Mo-Su 09:30-03:00"
+   "source": "osm"
   },
   {
    "id": "n4108127589",
@@ -1176,8 +1441,18 @@
    "address": "проспект Вернадского",
    "website": "https://cinemastar.ru/",
    "phone": "",
-   "screens": null,
-   "opening_hours": "Mo-Su 10:00-03:00"
+   "source": "osm"
+  },
+  {
+   "id": "n1241605911",
+   "name": "Синема-стар",
+   "brand": "",
+   "lat": 55.764925,
+   "lon": 37.845082,
+   "address": "",
+   "website": "http://www.cinema-star.ru/",
+   "phone": "",
+   "source": "osm"
   },
   {
    "id": "w163191671",
@@ -1188,8 +1463,7 @@
    "address": "Севастопольский проспект, 33",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "n1292942969",
@@ -1200,8 +1474,7 @@
    "address": "",
    "website": "",
    "phone": "+7 495 7830039",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "n3441521464",
@@ -1212,8 +1485,7 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": 8,
-   "opening_hours": "Mo-Su 10:00-03:00"
+   "source": "osm"
   },
   {
    "id": "n430145496",
@@ -1224,8 +1496,7 @@
    "address": "",
    "website": "http://www.formulakino.ru/",
    "phone": "+7 800 2508025",
-   "screens": null,
-   "opening_hours": "Mo-Su 10:00-01:00"
+   "source": "osm"
   },
   {
    "id": "n614515215",
@@ -1234,10 +1505,10 @@
    "lat": 55.744478,
    "lon": 37.565434,
    "address": "",
-   "website": "http://www.formulakino.ru/",
+   "website": "https://formulakino.ru",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "seed+osm",
+   "osmName": "Формула Кино Европа"
   },
   {
    "id": "n2102234758",
@@ -1248,8 +1519,7 @@
    "address": "",
    "website": "http://formulakino.ru",
    "phone": "+7 800 2508025",
-   "screens": null,
-   "opening_hours": "08:30-01:30"
+   "source": "osm"
   },
   {
    "id": "n4340833490",
@@ -1260,8 +1530,18 @@
    "address": "Кутузовский проспект, 57",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": "Mo-Su,PH 10:00-03:00"
+   "source": "osm"
+  },
+  {
+   "id": "w27821963",
+   "name": "Формула Кино на Можайке",
+   "brand": "",
+   "lat": 55.705741,
+   "lon": 37.388924,
+   "address": "",
+   "website": "http://www.formulakino.ru/",
+   "phone": "",
+   "source": "osm"
   },
   {
    "id": "n5198957113",
@@ -1272,8 +1552,7 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "n2003139830",
@@ -1284,8 +1563,7 @@
    "address": "",
    "website": "http://www.formulakino.ru/",
    "phone": "+7 800 2508025",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "w35814561",
@@ -1294,10 +1572,10 @@
    "lat": 55.752401,
    "lon": 37.602033,
    "address": "Арбатская площадь, 14",
-   "website": "https://cinema1909.ru/",
+   "website": "https://khudozhestvenny.ru",
    "phone": "",
-   "screens": null,
-   "opening_hours": "Mo-Su 00:00-03:00,09:00-24:00"
+   "source": "seed+osm",
+   "osmName": "Художественный"
   },
   {
    "id": "n4120425489",
@@ -1308,8 +1586,18 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": "Mo-Su 10:00-01:00"
+   "source": "osm"
+  },
+  {
+   "id": "n61669376",
+   "name": "Чайка",
+   "brand": "",
+   "lat": 56.009213,
+   "lon": 37.467544,
+   "address": "",
+   "website": "",
+   "phone": "",
+   "source": "osm"
   },
   {
    "id": "n1231162240",
@@ -1320,20 +1608,18 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
-   "id": "n8090121017",
-   "name": "Час Кино",
+   "id": "n700320724",
+   "name": "Щёлково",
    "brand": "",
-   "lat": 55.856504,
-   "lon": 37.653417,
+   "lat": 55.923614,
+   "lon": 38.001507,
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": "Mo-Su 09:30-23:45"
+   "source": "osm"
   },
   {
    "id": "n6979800434",
@@ -1344,20 +1630,29 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
-   "id": "n13935192537",
-   "name": "Cinema Park",
+   "id": "n5167718225",
+   "name": "CityStars Звездный",
    "brand": "",
-   "lat": 55.719939,
-   "lon": 37.525061,
+   "lat": 55.60152,
+   "lon": 37.044513,
    "address": "",
+   "website": "https://kinomonitor.ru/movies/the-cartoon-in-the-movie-issue-no-60/",
+   "phone": "",
+   "source": "osm"
+  },
+  {
+   "id": "n678298901",
+   "name": "Coca-Cola IMAX",
+   "brand": "",
+   "lat": 55.658712,
+   "lon": 37.846437,
+   "address": "МКАД, 14-й километр",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "w1076893336",
@@ -1368,8 +1663,7 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": 1,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "n13462338287",
@@ -1380,8 +1674,7 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "w695626023",
@@ -1392,8 +1685,18 @@
    "address": "",
    "website": "https://garagemca.org/ru/events/garage_screen",
    "phone": "+7 495 6450520",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
+  },
+  {
+   "id": "n907895647",
+   "name": "Grand Cinema",
+   "brand": "",
+   "lat": 55.955214,
+   "lon": 38.051546,
+   "address": "",
+   "website": "http://www.kino-grand.ru/",
+   "phone": "",
+   "source": "osm"
   },
   {
    "id": "n10586605321",
@@ -1404,8 +1707,7 @@
    "address": "улица Юных Ленинцев, 52",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": "00:00-01:00,10:00-24:00"
+   "source": "osm"
   },
   {
    "id": "n3616859093",
@@ -1416,20 +1718,29 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": "Mo-Su 11:00-04:00"
+   "source": "osm"
   },
   {
-   "id": "n4239988389",
-   "name": "Mori cinema Кунцево",
+   "id": "n6270979448",
+   "name": "Magic Cinema",
    "brand": "",
-   "lat": 55.738606,
-   "lon": 37.409711,
+   "lat": 55.995963,
+   "lon": 37.537097,
    "address": "",
-   "website": "https://mori-cinema.ru/cinema_detail/78049_mori_sinema/",
-   "phone": "",
-   "screens": null,
-   "opening_hours": "24/7"
+   "website": "https://vk.com/magicinemacom",
+   "phone": "+7 498 6805565",
+   "source": "osm"
+  },
+  {
+   "id": "n2339827425",
+   "name": "Mori cinema",
+   "brand": "",
+   "lat": 55.81876,
+   "lon": 37.347599,
+   "address": "",
+   "website": "http://www.mori-cinema.ru",
+   "phone": "+7 800 5555999",
+   "source": "osm"
   },
   {
    "id": "n430135770",
@@ -1440,8 +1751,7 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   },
   {
    "id": "n11117171234",
@@ -1452,8 +1762,7 @@
    "address": "улица Каховка, 29А",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": "10:00-02:00"
+   "source": "osm"
   },
   {
    "id": "n462275278",
@@ -1464,8 +1773,29 @@
    "address": "Дубравная улица, 34/29",
    "website": "https://info.pushka.club/moscow/ladya",
    "phone": "",
-   "screens": null,
-   "opening_hours": "Mo-Su 09:00-00:00"
+   "source": "osm"
+  },
+  {
+   "id": "n8235853486",
+   "name": "Silver Cinema",
+   "brand": "Silver Cinema",
+   "lat": 55.427791,
+   "lon": 37.558478,
+   "address": "Комсомольская улица, 24",
+   "website": "https://www.silvercinema.ru/",
+   "phone": "",
+   "source": "osm"
+  },
+  {
+   "id": "n4942521068",
+   "name": "Sky",
+   "brand": "",
+   "lat": 55.81837,
+   "lon": 37.965411,
+   "address": "",
+   "website": "",
+   "phone": "",
+   "source": "osm"
   },
   {
    "id": "n7814702187",
@@ -1476,8 +1806,7 @@
    "address": "",
    "website": "",
    "phone": "",
-   "screens": null,
-   "opening_hours": ""
+   "source": "osm"
   }
  ]
 }
