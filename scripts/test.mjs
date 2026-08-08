@@ -3,7 +3,7 @@
 // Сеть не нужна: `node scripts/test.mjs`.
 
 import assert from 'node:assert/strict';
-import { fromHtml, fromJsonLd, fromState, normalizeTitle, movieKey } from './sources/kinoafisha.mjs';
+import { cinemaBlocks, sessionsIn, contentOf, normalizeTitle, movieKey } from './sources/kinoafisha.mjs';
 import { normName, nameTokens, timeToMinutes, jsonLd, embeddedState, stripTags } from './lib/util.mjs';
 import { msk as kudagoMsk, price as kudagoPrice, format as kudagoFormat } from './sources/kudago.mjs';
 
@@ -54,110 +54,62 @@ test('jsonLd переживает битый блок', () => {
   assert.equal(found[0].name, 'Ок');
 });
 
-console.log('\nпарсер: уровень «состояние SPA»');
+console.log('\nпарсер kinoafisha по живой разметке');
 
-test('достаёт сеансы из __NEXT_DATA__', () => {
-  const state = {
-    props: {
-      pageProps: {
-        schedule: [
-          { time: '19:30', cinemaName: 'Октябрь', cinemaId: 5, movieName: 'Дюна', movieId: 9, price: 550, url: '/t/1' },
-          { time: '22:10', cinema: { id: 7, name: 'Художественный' }, movie: { title: 'Солярис' }, hall: 'IMAX' },
-          { time: 'не время', cinemaName: 'Мусор', movieName: 'Мусор' },
-        ],
-      },
-    },
-  };
-  const html = `<script id="__NEXT_DATA__" type="application/json">${JSON.stringify(state)}</script>`;
-  const shows = fromState(html, '2026-08-08');
-
-  assert.equal(shows.length, 2, 'узел без валидного времени должен отсеяться');
-  assert.deepEqual(
-    shows.map((s) => [s.cinemaName, s.movieTitle, s.time]),
-    [['Октябрь', 'Дюна', '19:30'], ['Художественный', 'Солярис', '22:10']],
-  );
-  assert.equal(shows[0].url, 'https://www.kinoafisha.info/t/1', 'относительная ссылка достраивается');
-  assert.equal(shows[0].price, 550);
-  assert.equal(shows[1].hall, 'IMAX');
-});
-
-test('embeddedState не падает на странице без состояния', () => {
-  assert.equal(embeddedState('<html><body>ничего</body></html>'), null);
-  assert.deepEqual(fromState('<html></html>', '2026-08-08'), []);
-});
-
-console.log('\nпарсер: уровень «JSON-LD»');
-
-test('читает ScreeningEvent', () => {
-  const html = `<script type="application/ld+json">${JSON.stringify([
-    {
-      '@type': 'ScreeningEvent',
-      startDate: '2026-08-08T21:15:00+03:00',
-      location: { '@type': 'MovieTheater', name: 'Каро 11 Октябрь' },
-      workPresented: { '@type': 'Movie', name: 'Интерстеллар' },
-      videoFormat: 'IMAX',
-      offers: { price: '700', url: 'https://buy.example/1' },
-    },
-    { '@type': 'ScreeningEvent', startDate: 'кривая дата', location: { name: 'X' } },
-  ])}</script>`;
-
-  const shows = fromJsonLd(html, '2026-08-08');
-  assert.equal(shows.length, 1);
-  assert.equal(shows[0].time, '21:15');
-  assert.equal(shows[0].date, '2026-08-08');
-  assert.equal(shows[0].cinemaName, 'Каро 11 Октябрь');
-  assert.equal(shows[0].movieTitle, 'Интерстеллар');
-  assert.equal(shows[0].price, 700);
-  assert.equal(shows[0].hall, 'IMAX');
-});
-
-console.log('\nпарсер: уровень «HTML»');
-
-test('разбирает блоки кинотеатр → фильм → времена', () => {
-  const html = `
-    <div class="page">
-      <a href="/russia/msk/cinema/1234/"><span>КАРО 11 Октябрь</span></a>
-      <div>
-        <a href="/russia/msk/movies/8379477/">Дюна: Часть третья</a>
-        <div class="t"><span>12:20</span><span>15:40</span><span>15:40</span></div>
-        <a href="/russia/msk/movies/555/">Солярис</a>
-        <div class="t"><span>19:05</span><span>23:50</span></div>
+const PAGE = `
+<style>.session_time{color:#000}.session_price{font-size:10px}</style>
+<header><a href="/russia/msk/cinema/">Кинотеатры</a></header>
+<div class="site_content">
+  <div class="showtimes_item">
+    <a class="showtimes_cinemaTitle" href="https://www.kinoafisha.info/russia/msk/cinema/1234/">КАРО 11 Октябрь</a>
+    <div class="sessions">
+      <div class="session session-ticket">
+        <span class="session_time">12:20</span><span class="session_price">от 450 \u20bd</span>
       </div>
-      <a href="/russia/msk/cinema/99/"><span>Художественный</span></a>
-      <div>
-        <a href="/russia/msk/movies/555/">Солярис</a>
-        <div class="t"><span>20:00</span></div>
+      <div class="session">
+        <span class="session_time">19:30</span><span class="session_price">от 1 200 \u20bd</span>
       </div>
-    </div>`;
+    </div>
+  </div>
+  <div class="showtimes_item">
+    <a class="showtimes_cinemaTitle" href="https://www.kinoafisha.info/russia/msk/cinema/99/">Художественный</a>
+    <div class="sessions">
+      <div class="session"><span class="session_time">21:15</span></div>
+    </div>
+  </div>
+</div>`;
 
-  const shows = fromHtml(html, '2026-08-08');
-
-  // 2 (дубль 15:40 схлопнут) + 2 + 1
-  assert.equal(shows.length, 5, `ожидалось 5 сеансов, вышло ${shows.length}`);
-
-  const oct = shows.filter((s) => s.cinemaName === 'КАРО 11 Октябрь');
-  assert.equal(oct.length, 4);
-  assert.equal(oct[0].cinemaId, '1234');
-  assert.equal(oct[0].movieId, '8379477');
-  assert.deepEqual(
-    oct.filter((s) => s.movieTitle.startsWith('Дюна')).map((s) => s.time).sort(),
-    ['12:20', '15:40'],
-    'одинаковые времена внутри одного фильма не дублируются',
-  );
-
-  const hud = shows.filter((s) => s.cinemaName === 'Художественный');
-  assert.equal(hud.length, 1, 'сеансы не должны перетекать в соседний кинотеатр');
-  assert.equal(hud[0].time, '20:00');
+test('стили и шапка не мешают разбору', () => {
+  const c = contentOf(PAGE);
+  assert.ok(!/session_time\{/.test(c), 'таблица стилей должна быть вырезана');
+  assert.ok(!/Кинотеатры<\/a>/.test(c), 'шапка сайта должна быть вырезана');
 });
 
-test('не выдумывает сеансы на пустой странице', () => {
-  assert.deepEqual(fromHtml('<html><body><p>13:37</p></body></html>', '2026-08-08'), []);
+test('страница делится на блоки «кинотеатр → сеансы»', () => {
+  const blocks = cinemaBlocks(contentOf(PAGE));
+  assert.equal(blocks.length, 2);
+  assert.deepEqual(blocks.map((b) => b.name), ['КАРО 11 Октябрь', 'Художественный']);
+
+  const first = sessionsIn(blocks[0].chunk);
+  assert.deepEqual(first.map((s) => s.time), ['12:20', '19:30'], 'оба сеанса первого зала');
+  assert.equal(first[0].price, 450);
+  assert.equal(first[1].price, 1200, 'пробел в «1 200» не должен ломать цену');
+
+  const second = sessionsIn(blocks[1].chunk);
+  assert.deepEqual(second.map((s) => s.time), ['21:15'], 'сеансы не перетекают в соседний зал');
+  assert.equal(second[0].price, null, 'без цены — null, а не ноль');
+});
+
+test('на странице без сеансов ничего не выдумывается', () => {
+  assert.deepEqual(sessionsIn('<div>19:30</div>'), []);
+  assert.deepEqual(cinemaBlocks('<p>пусто</p>'), []);
 });
 
 console.log('\nнормализация названий фильмов');
 
-test('срезает год и порядковый номер, ключ стабилен', () => {
+test('срезает год, номер и хвост «расписание»', () => {
   assert.equal(normalizeTitle('  Дюна: Часть третья (2026) '), 'Дюна: Часть третья');
+  assert.equal(normalizeTitle('Одиссея — расписание в Москве'), 'Одиссея');
   assert.equal(normalizeTitle('12. Солярис'), 'Солярис');
   assert.equal(movieKey('Дюна: Часть третья (2026)'), movieKey('Дюна: Часть третья'));
   assert.equal(movieKey('Ёжик в тумане'), 'ежик-в-тумане');

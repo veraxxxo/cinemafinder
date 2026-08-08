@@ -1,174 +1,192 @@
-// Источник расписания: kinoafisha.info (Москва).
+// Источник расписания: kinoafisha.info.
 //
-// Стратегия устойчивого парсинга — от самого надёжного к самому хрупкому:
-//   1. Встроенное состояние SPA (__NEXT_DATA__ / __INITIAL_STATE__)
-//   2. Разметка Schema.org (JSON-LD: Movie / ScreeningEvent)
-//   3. Разбор HTML регулярками по data-атрибутам
-// Если структура сайта поменяется, обычно выживает хотя бы один уровень.
+// Сайт отвечает 403 на прямые запросы с адресов дата-центров, поэтому в
+// GitHub Actions страницы берутся через открытый прокси. Локально (с обычного
+// адреса) прокси не нужен — включается флагом KA_DIRECT=1.
+//
+// Разметка, снятая с живой страницы:
+//   <a href="…/cinema/…">Название</a>   — заголовок блока кинотеатра
+//   <div class="session …">
+//     <span class="session_time">19:30</span>
+//     <span class="session_price">от 450 ₽</span>
+//   </div>
+//
+// Стратегии, в порядке предпочтения:
+//   1. общее расписание города за дату — один запрос на день;
+//   2. страницы отдельных фильмов — дороже, но переживает смену первой.
 
-import { getText, jsonLd, embeddedState, deepFind, stripTags } from '../lib/util.mjs';
+import { getText, stripTags } from '../lib/util.mjs';
 
 export const id = 'kinoafisha';
 export const title = 'Кино Афиша';
-const BASE = 'https://www.kinoafisha.info';
-const CITY = 'msk';
 
-/** Страницы, с которых пробуем снять расписание на конкретную дату. */
-const scheduleUrls = (date) => [
-  `${BASE}/russia/${CITY}/schedule/?date=${date}`,
-  `${BASE}/russia/${CITY}/schedule/`,
-  `${BASE}/rasp/?city=${CITY}&date=${date}`,
-  `${BASE}/${CITY}/schedule/?date=${date}`,
-];
+const BASE = 'https://www.kinoafisha.info';
+const CITY = 'russia/msk';
+const PROXY = 'https://api.allorigins.win/raw?url=';
+
+/** Сколько страниц фильмов тянуть максимум — прокси бесплатный и медленный. */
+const MOVIE_LIMIT = Number(process.env.KA_MOVIE_LIMIT || 30);
 
 const slug = (s) =>
-  s
-    .toLowerCase()
-    .replace(/ё/g, 'е')
-    .replace(/[^a-zа-я0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
+  s.toLowerCase().replace(/ё/g, 'е').replace(/[^a-zа-я0-9]+/g, '-').replace(/^-|-$/g, '');
 
-/** Уровень 1: состояние SPA. */
-export function fromState(html, date) {
-  const state = embeddedState(html);
-  if (!state) return [];
-
-  // Ищем узлы, похожие на сеанс: есть время и ссылка на кинотеатр/фильм.
-  const nodes = deepFind(
-    state,
-    (n) =>
-      !Array.isArray(n) &&
-      typeof n.time === 'string' &&
-      /^\d{1,2}:\d{2}$/.test(n.time) &&
-      (n.cinemaId || n.cinema || n.placeId || n.hall),
-  );
-
-  return nodes
-    .map((n) => ({
-      date,
-      time: n.time,
-      cinemaName: n.cinemaName || n.cinema?.name || n.place?.name || '',
-      cinemaId: String(n.cinemaId ?? n.cinema?.id ?? n.placeId ?? ''),
-      movieTitle: n.movieName || n.movie?.name || n.movie?.title || n.filmName || '',
-      movieId: String(n.movieId ?? n.movie?.id ?? ''),
-      hall: (typeof n.hall === 'string' ? n.hall : n.hall?.name) || n.hallName || n.format || '',
-      price: Number(n.price ?? n.minPrice ?? 0) || null,
-      url: n.url ? (n.url.startsWith('http') ? n.url : BASE + n.url) : '',
-    }))
-    .filter((s) => s.cinemaName && s.movieTitle);
+async function page(url) {
+  const target = process.env.KA_DIRECT ? url : PROXY + encodeURIComponent(url);
+  return getText(target, { retries: 2, timeout: 90000 });
 }
 
-/** Уровень 2: Schema.org ScreeningEvent. */
-export function fromJsonLd(html, date) {
+/** Убирает всё, что не является видимой разметкой: там те же имена классов. */
+export const contentOf = (html) =>
+  html
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<(?:head|header|nav|footer)[\s\S]*?<\/(?:head|header|nav|footer)>/gi, '');
+
+/** Сеансы внутри куска разметки: время и, если есть, цена. */
+export function sessionsIn(chunk) {
   const out = [];
-  for (const node of jsonLd(html)) {
-    const events = deepFind(node, (n) => n['@type'] === 'ScreeningEvent');
-    for (const e of events) {
-      const start = e.startDate || '';
-      const m = /T(\d{2}:\d{2})/.exec(start);
-      if (!m) continue;
-      out.push({
-        date: start.slice(0, 10) || date,
-        time: m[1],
-        cinemaName: e.location?.name || '',
-        cinemaId: '',
-        movieTitle: e.workPresented?.name || e.name || '',
-        movieId: '',
-        hall: e.videoFormat || '',
-        price: Number(e.offers?.price ?? e.offers?.lowPrice ?? 0) || null,
-        url: e.url || e.offers?.url || '',
-      });
-    }
-  }
-  return out.filter((s) => s.cinemaName && s.movieTitle);
-}
-
-/** Уровень 3: HTML. Блоки кинотеатров, внутри — фильмы и времена. */
-export function fromHtml(html, date) {
-  const out = [];
-
-  // Кусок страницы на один кинотеатр: заголовок со ссылкой /cinema/<id>/ ...
-  const cinemaRe =
-    /<a[^>]+href="([^"]*\/cinema\/[^"]*?)"[^>]*>([\s\S]{0,200}?)<\/a>([\s\S]*?)(?=<a[^>]+href="[^"]*\/cinema\/|$)/gi;
-
-  let cm;
-  while ((cm = cinemaRe.exec(html))) {
-    const cinemaUrl = cm[1];
-    const cinemaName = stripTags(cm[2]);
-    const block = cm[3];
-    if (!cinemaName || cinemaName.length > 80) continue;
-
-    // Внутри блока: ссылка на фильм, затем времена до следующей ссылки на фильм.
-    const movieRe =
-      /<a[^>]+href="([^"]*\/movies?\/[^"]*?)"[^>]*>([\s\S]{0,200}?)<\/a>([\s\S]*?)(?=<a[^>]+href="[^"]*\/movies?\/|$)/gi;
-    let mm;
-    while ((mm = movieRe.exec(block))) {
-      const movieTitle = stripTags(mm[2]);
-      if (!movieTitle || movieTitle.length > 120) continue;
-      const times = [...mm[3].matchAll(/>\s*([0-2]?\d:[0-5]\d)\s*</g)].map((t) => t[1]);
-      for (const time of new Set(times)) {
-        out.push({
-          date,
-          time,
-          cinemaName,
-          cinemaId: (/\/cinema\/(\d+)/.exec(cinemaUrl) || [])[1] || '',
-          movieTitle,
-          movieId: (/\/movies?\/(\d+)/.exec(mm[1]) || [])[1] || '',
-          hall: '',
-          price: null,
-          url: cinemaUrl.startsWith('http') ? cinemaUrl : BASE + cinemaUrl,
-        });
-      }
-    }
+  for (const m of chunk.matchAll(
+    /<span[^>]*class="[^"]*session_time[^"]*"[^>]*>\s*([0-2]?\d:[0-5]\d)\s*<\/span>([\s\S]{0,220}?)(?=<span[^>]*class="[^"]*session_time|$)/g,
+  )) {
+    const priceText = /session_price[^>]*>([^<]*)</.exec(m[2] || '');
+    const price = priceText ? Number((/\d[\d\s]*/.exec(priceText[1]) || [''])[0].replace(/\s/g, '')) : null;
+    out.push({ time: m[1], price: price || null });
   }
   return out;
 }
 
 /**
- * Забирает сеансы на дату. Возвращает {shows, layer} — layer говорит,
- * какой уровень парсинга сработал (видно в логах Actions).
+ * Разбивает страницу на блоки «кинотеатр → его сеансы».
+ * Заголовком блока считается ссылка на страницу кинотеатра.
  */
-export async function fetchDate(date) {
-  let lastErr;
-  for (const url of scheduleUrls(date)) {
-    let html;
+export function cinemaBlocks(content) {
+  const anchors = [
+    ...content.matchAll(/<a[^>]+href="([^"]*\/cinema\/[^"]*)"[^>]*>([\s\S]{0,240}?)<\/a>/g),
+  ];
+  const blocks = [];
+  for (let i = 0; i < anchors.length; i++) {
+    const name = stripTags(anchors[i][2]);
+    if (!name || name.length > 90) continue;
+    const start = anchors[i].index + anchors[i][0].length;
+    const end = i + 1 < anchors.length ? anchors[i + 1].index : content.length;
+    blocks.push({ name, url: anchors[i][1], chunk: content.slice(start, end) });
+  }
+  return blocks;
+}
+
+/** Стратегия 1: общее расписание города за дату. */
+async function fromCitySchedule(date) {
+  const urls = [`${BASE}/${CITY}/schedule/?date=${date}`, `${BASE}/${CITY}/schedule/`];
+  for (const url of urls) {
+    let content;
     try {
-      html = await getText(url, { retries: 1 });
+      content = contentOf(await page(url));
     } catch (err) {
-      lastErr = err;
+      console.warn(`[${id}] ${url}: ${err.message}`);
       continue;
     }
 
-    for (const [layer, parse] of [
-      ['state', fromState],
-      ['json-ld', fromJsonLd],
-      ['html', fromHtml],
-    ]) {
-      const shows = parse(html, date);
-      if (shows.length >= 10) {
-        console.log(`[${id}] ${date}: ${shows.length} сеансов (${layer}) ← ${url}`);
-        return { shows, layer, url };
+    const shows = [];
+    for (const block of cinemaBlocks(content)) {
+      // Внутри блока кинотеатра — ссылки на фильмы, за каждой её сеансы.
+      const films = [...block.chunk.matchAll(/<a[^>]+href="([^"]*\/movies?\/[^"]*)"[^>]*>([\s\S]{0,200}?)<\/a>/g)];
+      for (let i = 0; i < films.length; i++) {
+        const movieTitle = stripTags(films[i][2]);
+        if (!movieTitle || movieTitle.length > 140) continue;
+        const from = films[i].index + films[i][0].length;
+        const to = i + 1 < films.length ? films[i + 1].index : block.chunk.length;
+        for (const s of sessionsIn(block.chunk.slice(from, to))) {
+          shows.push({ date, time: s.time, price: s.price, cinemaName: block.name, movieTitle, url });
+        }
       }
     }
-    console.warn(`[${id}] ${date}: ${url} — ни один уровень парсинга не дал сеансов`);
+    if (shows.length >= 20) {
+      console.log(`[${id}] ${date}: ${shows.length} сеансов с общего расписания`);
+      return shows;
+    }
+    console.warn(`[${id}] ${date}: общее расписание дало ${shows.length} — мало`);
   }
-  if (lastErr) console.warn(`[${id}] ${date}: сеть — ${lastErr.message}`);
-  return { shows: [], layer: null, url: null };
+  return [];
 }
 
-/** Общий интерфейс источника: собрать сеансы за несколько дат. */
-export async function fetchDates(dates) {
-  const shows = [];
-  let layer = null;
-  for (const date of dates) {
-    const r = await fetchDate(date);
-    shows.push(...r.shows);
-    layer = layer || r.layer;
+/** Список фильмов в прокате: ссылки вида /movies/<id>/ с названиями. */
+async function moviesInRelease() {
+  const content = contentOf(await page(`${BASE}/${CITY}/movies/`));
+  const seen = new Map();
+  for (const m of content.matchAll(/<a[^>]+href="([^"]*\/movies\/(\d+)\/)"[^>]*>([\s\S]{0,160}?)<\/a>/g)) {
+    const name = stripTags(m[3]);
+    if (!name || name.length > 140 || seen.has(m[2])) continue;
+    seen.set(m[2], { id: m[2], title: name, url: `${BASE}/${CITY}/movies/${m[2]}/` });
   }
-  return { shows, layer };
+  return [...seen.values()];
+}
+
+/** Стратегия 2: страница фильма — на ней перечислены все залы с сеансами. */
+async function fromMoviePages(date) {
+  let movies;
+  try {
+    movies = await moviesInRelease();
+  } catch (err) {
+    console.warn(`[${id}] список фильмов не открылся: ${err.message}`);
+    return [];
+  }
+  console.log(`[${id}] фильмов в прокате: ${movies.length}`);
+  if (movies.length > MOVIE_LIMIT) {
+    console.warn(`[${id}] беру первые ${MOVIE_LIMIT} из ${movies.length} — прокси не тянет больше`);
+  }
+
+  const shows = [];
+  for (const movie of movies.slice(0, MOVIE_LIMIT)) {
+    try {
+      const content = contentOf(await page(`${movie.url}?date=${date}`));
+      let n = 0;
+      for (const block of cinemaBlocks(content)) {
+        for (const s of sessionsIn(block.chunk)) {
+          shows.push({
+            date,
+            time: s.time,
+            price: s.price,
+            cinemaName: block.name,
+            movieTitle: movie.title,
+            url: movie.url,
+          });
+          n++;
+        }
+      }
+      console.log(`[${id}]   ${movie.title}: ${n}`);
+    } catch (err) {
+      console.warn(`[${id}]   ${movie.title}: ${err.message}`);
+    }
+  }
+  return shows;
+}
+
+export async function fetchDates(dates) {
+  const all = [];
+  let layer = null;
+
+  for (const date of dates) {
+    let shows = await fromCitySchedule(date);
+    if (shows.length) {
+      layer = layer || 'расписание города';
+    } else {
+      shows = await fromMoviePages(date);
+      if (shows.length) layer = layer || 'страницы фильмов';
+    }
+    all.push(...shows);
+
+    // Дальше сегодняшнего дня страницы фильмов тянуть слишком долго.
+    if (!shows.length) break;
+  }
+
+  return { shows: all, layer };
 }
 
 export const normalizeTitle = (t) =>
-  stripTags(t).replace(/\s*\(\d{4}\)\s*$/, '').replace(/^\d+\.\s*/, '').trim();
+  stripTags(t)
+    .replace(/\s*\(\d{4}\)\s*$/, '')
+    .replace(/^\d+\.\s*/, '')
+    .replace(/\s*[—-]\s*расписание.*$/i, '')
+    .trim();
 
 export const movieKey = (t) => slug(normalizeTitle(t));
