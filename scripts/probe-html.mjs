@@ -22,9 +22,16 @@ console.log(`   ссылок /movies/: ${count(/href="[^"]*\/movies?\/[^"]*"/g)}
 console.log(`   session_time: ${count(/session_time/g)}`);
 console.log(`   data-атрибутов с id: ${count(/data-(?:cinema|movie|session)[-_]?id="/gi)}`);
 
+// Стили и скрипты содержат те же имена классов и сбивают поиск —
+// ищем только по видимой разметке.
+const body = html
+  .replace(/<style[\s\S]*?<\/style>/gi, '')
+  .replace(/<script[\s\S]*?<\/script>/gi, '')
+  .replace(/<(?:head|header|nav|footer)[\s\S]*?<\/(?:head|header|nav|footer)>/gi, '');
+
 // Какие классы обрамляют сеансы — по ним и строится парсер.
 const classes = {};
-for (const m of html.matchAll(/class="([^"]{0,120})"[^>]{0,200}>\s*[0-2]?\d:[0-5]\d\s*</g)) {
+for (const m of body.matchAll(/class="([^"]{0,120})"[^>]{0,200}>\s*[0-2]?\d:[0-5]\d\s*</g)) {
   classes[m[1]] = (classes[m[1]] || 0) + 1;
 }
 console.log('\nклассы у элементов с временем:');
@@ -34,17 +41,17 @@ for (const [c, n] of Object.entries(classes).sort((a, b) => b[1] - a[1]).slice(0
 
 // Кусок вокруг первой ссылки на кинотеатр: видно, как связаны название,
 // адрес и блок сеансов.
-const first = /href="([^"]*\/cinema\/[^"]*)"/.exec(html);
+const first = /href="([^"]*\/msk\/cinema\/[^"]*)"/.exec(body) || /href="([^"]*\/cinema\/\d+[^"]*)"/.exec(body);
 if (first) {
-  const i = html.indexOf(first[0]);
+  const i = body.indexOf(first[0]);
   console.log('\n─── разметка вокруг первого кинотеатра ' + '─'.repeat(30));
-  console.log(html.slice(Math.max(0, i - 900), i + 2600).replace(/\n\s*/g, ' ').replace(/> </g, '>\n<'));
+  console.log(body.slice(Math.max(0, i - 900), i + 2600).replace(/\n\s*/g, ' ').replace(/> </g, '>\n<'));
 }
 
 // И вокруг первого времени — там же обычно лежит ссылка на покупку и зал.
-const t = /session_time/.exec(html) || /[^>]>\s*[0-2]?\d:[0-5]\d\s*</.exec(html);
+const t = /class="session[ _"]/.exec(body);
 if (t) {
-  const i = html.indexOf(t[0]);
+  const i = body.indexOf(t[0]);
   console.log('\n─── разметка вокруг первого сеанса ' + '─'.repeat(34));
-  console.log(html.slice(Math.max(0, i - 1200), i + 1200).replace(/\n\s*/g, ' ').replace(/> </g, '>\n<'));
+  console.log(body.slice(Math.max(0, i - 1800), i + 1400).replace(/\n\s*/g, ' ').replace(/> </g, '>\n<'));
 }
