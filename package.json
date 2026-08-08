@@ -15,5 +15,8 @@
     "serve": "npx --yes serve -l 8080 .",
     "test": "node scripts/test.mjs"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "playwright": "^1.49.0"
+  }
 }

@@ -16,6 +16,7 @@
 //   2. страницы отдельных фильмов — дороже, но переживает смену первой.
 
 import { getText, stripTags } from '../lib/util.mjs';
+import { browserAvailable, fetchPage, closeBrowser } from '../lib/browser.mjs';
 
 export const id = 'kinoafisha';
 export const title = 'Кино Афиша';
@@ -30,8 +31,38 @@ const MOVIE_LIMIT = Number(process.env.KA_MOVIE_LIMIT || 30);
 const slug = (s) =>
   s.toLowerCase().replace(/ё/g, 'е').replace(/[^a-zа-я0-9]+/g, '-').replace(/^-|-$/g, '');
 
+// Способ загрузки выбирается один раз: настоящий браузер, если он есть,
+// иначе открытый прокси. Прямые запросы сайт отбивает по 403.
+let mode = null;
+
+async function pickMode() {
+  if (mode) return mode;
+  if (process.env.KA_DIRECT) return (mode = 'direct');
+
+  if (await browserAvailable()) {
+    try {
+      const { status } = await fetchPage(`${BASE}/${CITY}/movies/`);
+      if (status === 200) {
+        console.log(`[${id}] загрузка через Chromium — сайт пустил браузер`);
+        return (mode = 'browser');
+      }
+      console.warn(`[${id}] браузер получил HTTP ${status}, перехожу на прокси`);
+    } catch (err) {
+      console.warn(`[${id}] браузер не смог открыть сайт: ${err.message}`);
+    }
+  }
+  console.log(`[${id}] загрузка через прокси`);
+  return (mode = 'proxy');
+}
+
 async function page(url) {
-  const target = process.env.KA_DIRECT ? url : PROXY + encodeURIComponent(url);
+  const how = await pickMode();
+  if (how === 'browser') {
+    const { status, html } = await fetchPage(url, { waitFor: '.session_time' });
+    if (status !== 200) throw new Error(`HTTP ${status}`);
+    return html;
+  }
+  const target = how === 'direct' ? url : PROXY + encodeURIComponent(url);
   return getText(target, { retries: 2, timeout: 90000 });
 }
 
@@ -179,7 +210,8 @@ export async function fetchDates(dates) {
     if (!shows.length) break;
   }
 
-  return { shows: all, layer };
+  await closeBrowser();
+  return { shows: all, layer: layer && `${layer} (${mode || 'прокси'})` };
 }
 
 export const normalizeTitle = (t) =>

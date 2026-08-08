@@ -50,6 +50,14 @@ jobs:
           fi
           node -e "const d=require('./data/cinemas.json');console.log('кинотеатров:',d.count??d.items.length)"
 
+      - name: Поставить Chromium
+        # kinoafisha отбивает обычные HTTP-запросы, но пускает настоящий
+        # браузер. Если установка не удалась — парсер сам уйдёт на прокси.
+        continue-on-error: true
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
       - name: Расписание сеансов
         id: schedule
         continue-on-error: true
