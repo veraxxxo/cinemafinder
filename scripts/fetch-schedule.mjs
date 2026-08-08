@@ -11,6 +11,7 @@ import * as kudago from './sources/kudago.mjs';
 import * as kinoafisha from './sources/kinoafisha.mjs';
 import * as kinomax from './sources/kinomax.mjs';
 import { mskDate, normName, nameTokens } from './lib/util.mjs';
+import { geocode, save as saveGeocode } from './lib/geocode.mjs';
 
 // kinoafisha отдаёт 403 на IP дата-центров: из Actions молча пропускается,
 // но локально (с домашнего адреса) добирает то, чего нет в KudaGo.
@@ -100,6 +101,12 @@ for (const s of rawShows) {
   const source = SOURCES.find((x) => x.id === s.source);
   let cinema = matchCinema(s.cinemaName);
 
+  // Источник дал адрес, но пары в OSM нет — превращаем адрес в координаты.
+  if (!cinema && !s.cinemaCoords && s.cinemaAddress) {
+    const found = await geocode({ name: s.cinemaName, address: s.cinemaAddress });
+    if (found) s.cinemaCoords = { lat: found.lat, lon: found.lon };
+  }
+
   if (!cinema && s.cinemaCoords) {
     // Площадки нет в OSM, но координаты известны — заводим свою запись.
     const id = `x${normName(s.cinemaName).replace(/\s/g, '-')}`;
@@ -151,6 +158,8 @@ for (const s of rawShows) {
     url: s.url || undefined,
   });
 }
+
+await saveGeocode();
 
 shows.sort((a, b) => a.d.localeCompare(b.d) || a.t.localeCompare(b.t));
 

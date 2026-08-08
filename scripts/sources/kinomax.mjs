@@ -29,6 +29,14 @@ function timesIn(chunk) {
   return [...new Set([...chunk.matchAll(/>\s*([0-2]?\d:[0-5]\d)\s*</g)].map((m) => m[1]))];
 }
 
+/** Адрес внутри блока — по нему зал можно поставить на карту без OSM. */
+const ADDRESS = /((?:ул\.|улица|просп\.|проспект|пр-т|шоссе|наб\.|набережная|пер\.|переулок|пл\.|площадь|бул\.|бульвар|проезд)[^<>{}]{4,70})/i;
+
+function addressIn(chunk) {
+  const m = ADDRESS.exec(stripTags(chunk).slice(0, 600));
+  return m ? m[1].replace(/\s+/g, ' ').trim() : '';
+}
+
 /** Блоки «кинотеатр → его сеансы»: заголовком считается ссылка на зал. */
 function cinemaBlocks(content) {
   const anchors = [
@@ -40,7 +48,8 @@ function cinemaBlocks(content) {
     if (!name || name.length > 90) continue;
     const start = anchors[i].index + anchors[i][0].length;
     const end = i + 1 < anchors.length ? anchors[i + 1].index : content.length;
-    out.push({ name, chunk: content.slice(start, end) });
+    const chunk = content.slice(start, end);
+    out.push({ name, chunk, address: addressIn(chunk) });
   }
   return out;
 }
@@ -87,6 +96,7 @@ export async function fetchDates(dates) {
               date,
               time,
               cinemaName: block.name,
+              cinemaAddress: block.address,
               movieTitle: movie.title,
               price: null,
               url,
