@@ -156,6 +156,18 @@ export async function fetchDate(date) {
   return { shows: [], layer: null, url: null };
 }
 
+/** Общий интерфейс источника: собрать сеансы за несколько дат. */
+export async function fetchDates(dates) {
+  const shows = [];
+  let layer = null;
+  for (const date of dates) {
+    const r = await fetchDate(date);
+    shows.push(...r.shows);
+    layer = layer || r.layer;
+  }
+  return { shows, layer };
+}
+
 export const normalizeTitle = (t) =>
   stripTags(t).replace(/\s*\(\d{4}\)\s*$/, '').replace(/^\d+\.\s*/, '').trim();
 

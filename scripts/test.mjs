@@ -5,6 +5,7 @@
 import assert from 'node:assert/strict';
 import { fromHtml, fromJsonLd, fromState, normalizeTitle, movieKey } from './sources/kinoafisha.mjs';
 import { normName, nameTokens, timeToMinutes, jsonLd, embeddedState, stripTags } from './lib/util.mjs';
+import { msk as kudagoMsk, price as kudagoPrice, format as kudagoFormat } from './sources/kudago.mjs';
 
 let passed = 0;
 const test = (name, fn) => {
@@ -160,6 +161,33 @@ test('срезает год и порядковый номер, ключ ста�
   assert.equal(normalizeTitle('12. Солярис'), 'Солярис');
   assert.equal(movieKey('Дюна: Часть третья (2026)'), movieKey('Дюна: Часть третья'));
   assert.equal(movieKey('Ёжик в тумане'), 'ежик-в-тумане');
+});
+
+console.log('\nисточник KudaGo');
+
+test('сеанс в момент UTC переводится в московские дату и время', () => {
+  assert.deepEqual(kudagoMsk(Date.parse('2026-08-08T15:00:00+03:00') / 1000), {
+    date: '2026-08-08',
+    time: '15:00',
+  });
+  // 22:30 UTC 8-го = 01:30 МСК уже 9-го — дата обязана съехать
+  assert.deepEqual(kudagoMsk(Date.parse('2026-08-08T22:30:00Z') / 1000), {
+    date: '2026-08-09',
+    time: '01:30',
+  });
+});
+
+test('цена вытаскивается из строки «800 руб.»', () => {
+  assert.equal(kudagoPrice('800 руб.'), 800);
+  assert.equal(kudagoPrice('от 1 200 руб.'), 1200);
+  assert.equal(kudagoPrice(null), null);
+  assert.equal(kudagoPrice('бесплатно'), null);
+});
+
+test('формат зала собирается из флагов', () => {
+  assert.equal(kudagoFormat({ imax: true, three_d: true }), 'IMAX · 3D');
+  assert.equal(kudagoFormat({ original_language: true }), 'ориг. язык');
+  assert.equal(kudagoFormat({}), '');
 });
 
 console.log('\nсшивка «афиша ↔ OpenStreetMap»');

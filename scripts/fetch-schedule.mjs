@@ -1,12 +1,19 @@
 #!/usr/bin/env node
-// Собирает расписание сеансов на ближайшие дни и сшивает его с кинотеатрами
-// из OpenStreetMap. Результат — data/schedule.json.
+// Собирает расписание сеансов и сшивает его с кинотеатрами из OpenStreetMap.
+// Результат — data/schedule.json.
+//
+// Площадка сеанса ищется среди кинотеатров OSM по названию. Если совпадения
+// нет, но источник дал координаты, площадка едет в extraCinemas — сеанс не
+// теряется и всё равно попадает на карту.
 
 import { readFile, writeFile } from 'node:fs/promises';
+import * as kudago from './sources/kudago.mjs';
 import * as kinoafisha from './sources/kinoafisha.mjs';
 import { mskDate, normName, nameTokens } from './lib/util.mjs';
 
-const SOURCES = [kinoafisha];
+// kinoafisha отдаёт 403 на IP дата-центров: из Actions молча пропускается,
+// но локально (с домашнего адреса) добирает то, чего нет в KudaGo.
+const SOURCES = [kudago, kinoafisha];
 const DAYS = Number(process.env.DAYS || 5);
 
 const cinemasFile = new URL('../data/cinemas.json', import.meta.url);
@@ -14,10 +21,7 @@ const outFile = new URL('../data/schedule.json', import.meta.url);
 
 const cinemas = JSON.parse(await readFile(cinemasFile, 'utf8')).items;
 
-// ── Сопоставление названий кинотеатров ───────────────────────────────────────
-// Афиша и OSM называют одни и те же места по-разному («КАРО 11 Октябрь» /
-// «Октябрь»). Сначала точное совпадение нормализованных строк, затем — по
-// пересечению значимых слов.
+// ── Сопоставление названий ───────────────────────────────────────────────────
 
 const exact = new Map();
 for (const c of cinemas) {
@@ -34,8 +38,7 @@ function matchCinema(rawName) {
   const key = normName(rawName);
   let hit = exact.get(key) || null;
 
-  if (!hit && key) {
-    // подстрока в обе стороны
+  if (!hit && key.length > 3) {
     for (const [k, c] of exact) {
       if (k.length > 3 && (k.includes(key) || key.includes(k))) {
         hit = c;
@@ -67,45 +70,72 @@ function matchCinema(rawName) {
 // ── Сбор ─────────────────────────────────────────────────────────────────────
 
 const dates = Array.from({ length: DAYS }, (_, i) => mskDate(i));
+console.log(`[schedule] Даты: ${dates.join(', ')}`);
+
 const rawShows = [];
 const layers = {};
 
 for (const source of SOURCES) {
-  for (const date of dates) {
-    try {
-      const { shows, layer } = await source.fetchDate(date);
-      for (const s of shows) rawShows.push({ ...s, source: source.id });
-      if (layer) layers[`${source.id}:${date}`] = layer;
-    } catch (err) {
-      console.warn(`[schedule] ${source.id} ${date}: ${err.message}`);
-    }
+  try {
+    const { shows, layer } = await source.fetchDates(dates);
+    for (const s of shows) rawShows.push({ ...s, source: source.id });
+    layers[source.id] = layer || 'нет данных';
+    console.log(`[schedule] ${source.id}: ${shows.length} сеансов (${layer || '—'})`);
+  } catch (err) {
+    layers[source.id] = `ошибка: ${err.message}`;
+    console.warn(`[schedule] ${source.id} упал: ${err.message}`);
   }
 }
-
-console.log(`[schedule] Сырых сеансов: ${rawShows.length}`);
 
 // ── Нормализация ─────────────────────────────────────────────────────────────
 
 const movies = new Map();
+const extraCinemas = new Map();
 const shows = [];
 const unmatched = new Map();
 const seen = new Set();
 
 for (const s of rawShows) {
-  const cinema = matchCinema(s.cinemaName);
+  const source = SOURCES.find((x) => x.id === s.source);
+  let cinema = matchCinema(s.cinemaName);
+
+  if (!cinema && s.cinemaCoords) {
+    // Площадки нет в OSM, но координаты известны — заводим свою запись.
+    const id = `x${normName(s.cinemaName).replace(/\s/g, '-')}`;
+    if (!extraCinemas.has(id)) {
+      extraCinemas.set(id, {
+        id,
+        name: s.cinemaName,
+        lat: +s.cinemaCoords.lat.toFixed(6),
+        lon: +s.cinemaCoords.lon.toFixed(6),
+        address: s.cinemaAddress || '',
+        website: s.cinemaUrl || '',
+        source: s.source,
+      });
+    }
+    cinema = extraCinemas.get(id);
+  }
+
   if (!cinema) {
     unmatched.set(s.cinemaName, (unmatched.get(s.cinemaName) || 0) + 1);
     continue;
   }
 
-  const source = SOURCES.find((x) => x.id === s.source) || kinoafisha;
   const title = source.normalizeTitle(s.movieTitle);
   const mid = source.movieKey(title);
   if (!title || !mid) continue;
 
-  if (!movies.has(mid)) movies.set(mid, { id: mid, title, count: 0 });
+  if (!movies.has(mid)) {
+    movies.set(mid, {
+      id: mid,
+      title,
+      duration: s.duration || null,
+      genres: s.genres || [],
+      count: 0,
+    });
+  }
 
-  const dedupeKey = `${cinema.id}|${mid}|${s.date}|${s.time}|${s.hall}`;
+  const dedupeKey = `${cinema.id}|${mid}|${s.date}|${s.time}`;
   if (seen.has(dedupeKey)) continue;
   seen.add(dedupeKey);
 
@@ -125,26 +155,28 @@ shows.sort((a, b) => a.d.localeCompare(b.d) || a.t.localeCompare(b.t));
 
 const top = [...unmatched.entries()].sort((a, b) => b[1] - a[1]).slice(0, 25);
 if (top.length) {
-  console.warn(`[schedule] Не сопоставлено с OSM (${unmatched.size} названий):`);
-  for (const [name, n] of top) console.warn(`   ${n.toString().padStart(4)}  ${name}`);
+  console.warn(`[schedule] Площадки без координат и без пары в OSM (${unmatched.size}):`);
+  for (const [name, n] of top) console.warn(`   ${String(n).padStart(4)}  ${name}`);
 }
 
 const payload = {
   updated: new Date().toISOString(),
   sources: SOURCES.map((s) => ({ id: s.id, title: s.title })),
   layers,
-  dates: [...new Set(shows.map((s) => s.d))].sort(),
+  dates,
   stats: {
     shows: shows.length,
     movies: movies.size,
     cinemas: new Set(shows.map((s) => s.c)).size,
+    extraCinemas: extraCinemas.size,
     unmatchedNames: unmatched.size,
   },
   movies: [...movies.values()].sort((a, b) => b.count - a.count),
+  extraCinemas: [...extraCinemas.values()],
   shows,
 };
 
-// Не затираем рабочие данные пустым результатом (сайт мог лечь).
+// Не затираем рабочие данные пустым результатом (источник мог лечь).
 let previous = null;
 try {
   previous = JSON.parse(await readFile(outFile, 'utf8'));
@@ -156,10 +188,13 @@ if (!shows.length && previous?.shows?.length) {
   console.error('[schedule] Пустой результат — оставляю прежнее расписание');
   process.exitCode = 1;
 } else {
-  await writeFile(outFile, JSON.stringify(payload, null, 0));
+  await writeFile(outFile, JSON.stringify(payload));
   console.log(
     `[schedule] Сохранено: ${shows.length} сеансов, ${movies.size} фильмов, ` +
-      `${payload.stats.cinemas} кинотеатров, даты ${payload.dates.join(', ') || '—'}`,
+      `${payload.stats.cinemas} площадок (из них своих ${extraCinemas.size})`,
   );
-  if (!shows.length) process.exitCode = 1;
+  if (!shows.length) {
+    console.error('[schedule] Ни одного сеанса — источники ничего не дали');
+    process.exitCode = 1;
+  }
 }

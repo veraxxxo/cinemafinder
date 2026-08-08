@@ -80,6 +80,13 @@ async function load() {
     cinemas = await cinemasFromOverpass();
   }
 
+  // Площадки, которых нет в OpenStreetMap, но которые пришли с координатами
+  // от источника расписания.
+  if (schedule?.extraCinemas?.length) {
+    const known = new Set(cinemas.map((c) => c.id));
+    cinemas = cinemas.concat(schedule.extraCinemas.filter((c) => !known.has(c.id)));
+  }
+
   state.cinemas = cinemas;
   state.cinemaById = new Map(cinemas.map((c) => [c.id, c]));
 
@@ -164,16 +171,24 @@ function popupHtml(cinema, shows) {
     })
     .join('');
 
-  const site = cinema.website
-    ? `<div class="addr"><a href="${cinema.website}" target="_blank" rel="noopener">сайт кинотеатра</a></div>`
-    : '';
   const route = `<a href="https://yandex.ru/maps/?rtext=~${cinema.lat},${cinema.lon}&rtt=mt" target="_blank" rel="noopener">маршрут</a>`;
+  const site = cinema.website
+    ? ` · <a href="${cinema.website}" target="_blank" rel="noopener">сайт</a>`
+    : '';
+
+  // Полного открытого источника сеансов по Москве нет, поэтому даём прямой
+  // переход в афишу по названию — там расписание всегда полное.
+  const q = encodeURIComponent(cinema.name);
+  const afisha =
+    `<div class="addr">Полное расписание: ` +
+    `<a href="https://afisha.yandex.ru/moscow/search?text=${q}" target="_blank" rel="noopener">Яндекс&nbsp;Афиша</a> · ` +
+    `<a href="https://www.kinoafisha.info/search/?text=${q}" target="_blank" rel="noopener">Кино&nbsp;Афиша</a></div>`;
 
   return (
     `<h3>${cinema.name}</h3>` +
-    `<div class="addr">${cinema.address || 'адрес не указан'} · ${route}</div>` +
-    site +
-    (films || '<div class="addr">Сеансов по текущему фильтру нет.</div>')
+    `<div class="addr">${cinema.address || 'адрес не указан'} · ${route}${site}</div>` +
+    (films || '<div class="addr">Сеансов по текущему фильтру нет.</div>') +
+    afisha
   );
 }
 

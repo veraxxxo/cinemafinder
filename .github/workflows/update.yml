@@ -63,10 +63,22 @@ jobs:
           git add data/
           if git diff --cached --quiet; then
             echo "Изменений нет."
-          else
-            git commit -m "data: обновление $(date -u '+%Y-%m-%d %H:%M UTC')"
-            git push
+            exit 0
           fi
+          git commit -m "data: обновление $(date -u '+%Y-%m-%d %H:%M UTC')"
+          # В main могли влить код, пока джоба тянула данные, — подтягиваем и
+          # повторяем, иначе пуш отлетает с (fetch first).
+          for attempt in 1 2 3; do
+            if git push; then
+              echo "Запушено с попытки $attempt."
+              exit 0
+            fi
+            echo "Пуш отклонён, подтягиваю main и пробую снова…"
+            git pull --rebase origin main
+            sleep $((attempt * 5))
+          done
+          echo "::error::Не удалось запушить данные за 3 попытки"
+          exit 1
 
       - name: Итог
         run: |
