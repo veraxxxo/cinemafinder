@@ -1,56 +1,8 @@
 {
- "updated": "2026-08-08T13:05:05.575Z",
+ "updated": "2026-08-08T13:11:34.407Z",
  "source": "OpenStreetMap / Overpass API",
- "count": 127,
+ "count": 122,
  "items": [
-  {
-   "id": "n1686836397",
-   "name": "5D КиноАттракцион",
-   "brand": "",
-   "lat": 55.547992,
-   "lon": 37.54285,
-   "address": "",
-   "website": "",
-   "phone": "",
-   "screens": null,
-   "opening_hours": ""
-  },
-  {
-   "id": "w355513093",
-   "name": "5D кинотеатр",
-   "brand": "",
-   "lat": 55.899473,
-   "lon": 37.572541,
-   "address": "",
-   "website": "",
-   "phone": "",
-   "screens": null,
-   "opening_hours": ""
-  },
-  {
-   "id": "n4035479181",
-   "name": "5D Кинотеатр",
-   "brand": "",
-   "lat": 56.008428,
-   "lon": 37.199442,
-   "address": "",
-   "website": "",
-   "phone": "",
-   "screens": null,
-   "opening_hours": ""
-  },
-  {
-   "id": "n4584166776",
-   "name": "7D cinema",
-   "brand": "",
-   "lat": 55.597731,
-   "lon": 37.526937,
-   "address": "",
-   "website": "",
-   "phone": "",
-   "screens": null,
-   "opening_hours": "Mo-Su 10:00-22:00"
-  },
   {
    "id": "n1586978957",
    "name": "Алмаз Синема Алтуфьевский",
@@ -491,18 +443,6 @@
    "lon": 37.662679,
    "address": "",
    "website": "https://kinoteatr.ru/depo-cinemapark/#",
-   "phone": "",
-   "screens": null,
-   "opening_hours": ""
-  },
-  {
-   "id": "w363461032",
-   "name": "Кинотеатр 5D",
-   "brand": "",
-   "lat": 55.794354,
-   "lon": 37.671695,
-   "address": "",
-   "website": "",
    "phone": "",
    "screens": null,
    "opening_hours": ""
