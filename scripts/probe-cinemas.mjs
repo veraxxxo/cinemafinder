@@ -65,7 +65,9 @@ console.log('═'.repeat(78));
 
 const found = {};
 
-for (const [label, selector] of Object.entries(VARIANTS)) {
+// Overpass отвечает минутами; когда нужен только разбор сайтов, его можно
+// пропустить: SKIP_OSM=1.
+for (const [label, selector] of (process.env.SKIP_OSM ? [] : Object.entries(VARIANTS))) {
   try {
     const data = await overpass(`[out:json][timeout:110];${AREA}${selector}out center tags;`);
     const named = (data.elements || []).filter((e) => e.tags?.name || e.tags?.['name:ru']);

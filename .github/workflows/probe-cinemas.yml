@@ -5,6 +5,11 @@ name: Диагностика источников (кинотеатры)
 
 on:
   workflow_dispatch:
+    inputs:
+      skip_osm:
+        description: 'Пропустить медленные запросы к OpenStreetMap'
+        type: boolean
+        default: false
 
 jobs:
   probe:
@@ -16,3 +21,5 @@ jobs:
         with:
           node-version: '22'
       - run: node scripts/probe-cinemas.mjs
+        env:
+          SKIP_OSM: ${{ inputs.skip_osm && '1' || '' }}
