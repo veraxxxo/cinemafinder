@@ -169,3 +169,6 @@ button.wide { width: 100%; margin-top: 4px; }
   #panel.open ~ #toggle-panel { left: auto; right: 12px; }
   .leaflet-popup-content { width: 240px !important; }
 }
+
+#movie-suggest li.nores { color: var(--muted); cursor: default; font-size: 13px; }
+#movie-suggest li.nores:hover { background: transparent; color: var(--muted); }

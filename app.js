@@ -30,7 +30,7 @@ const state = {
   from: 360,
   to: 1799,
   cinemaQuery: '',
-  onlyWithShows: true,
+  onlyWithShows: false,
   me: null,
 };
 
@@ -321,7 +321,22 @@ function setupMovieSearch() {
     const opts = options();
     list.innerHTML = '';
     cursor = -1;
-    if (!opts.length) { list.hidden = true; return; }
+
+    if (!opts.length) {
+      // Молчаливо прятать список нельзя: пользователь видит, что ввод ничего
+      // не меняет, и считает это поломкой. Объясняем, почему пусто.
+      if (input.value.trim()) {
+        const li = document.createElement('li');
+        li.className = 'nores';
+        li.textContent = `«${input.value.trim()}» нет в собранном расписании`;
+        list.appendChild(li);
+        list.hidden = false;
+      } else {
+        list.hidden = true;
+      }
+      return;
+    }
+
     for (const m of opts) {
       const li = document.createElement('li');
       const n = showsForDate().filter((s) => s.m === m.id).length;

@@ -1,9 +1,19 @@
 #!/usr/bin/env node
-// Забирает все кинотеатры Москвы из OpenStreetMap через Overpass API
-// и складывает в data/cinemas.json.
+// Собирает список кинотеатров Москвы в data/cinemas.json.
+//
+// Два источника, и это принципиально:
+//   1. data/cinemas-seed.csv — выверенный вручную перечень площадок. Он
+//      определяет, что на карте обязано быть, но координат в нём нет.
+//   2. OpenStreetMap через Overpass — координаты и адреса.
+//
+// Площадки из перечня, которых в OSM не нашлось, геокодируются по названию;
+// результат кэшируется в data/geocode.json, чтобы каждый запуск не дёргал
+// геокодер заново. Кинотеатры, найденные только в OSM, тоже остаются — так
+// список получается не уже ни одного из источников.
 
-import { writeFile, mkdir } from 'node:fs/promises';
+import { writeFile, readFile, mkdir } from 'node:fs/promises';
 import { UA } from './lib/util.mjs';
+import { bestMatch, normalize } from './lib/match.mjs';
 
 const ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
@@ -11,22 +21,26 @@ const ENDPOINTS = [
   'https://overpass.private.coffee/api/interpreter',
 ];
 
-// relation 102269 — Москва (включая ТиНАО). Берём и точки, и здания.
+// Рамка вокруг Москвы с запасом: в перечне есть Реутов, Подольск,
+// Красногорск, Пушкино и Зеленоград — формально это уже область.
+const BBOX = '55.30,36.70,56.20,38.20';
+
 const QUERY = `
 [out:json][timeout:90];
-rel(102269); map_to_area -> .msk;
 (
-  node(area.msk)["amenity"="cinema"];
-  way(area.msk)["amenity"="cinema"];
-  relation(area.msk)["amenity"="cinema"];
+  node(${BBOX})["amenity"="cinema"];
+  way(${BBOX})["amenity"="cinema"];
+  relation(${BBOX})["amenity"="cinema"];
+  node(${BBOX})["building"="cinema"];
+  way(${BBOX})["building"="cinema"];
 );
 out center tags;
 `;
 
-// Overpass бесплатный и общий: под нагрузкой он отвечает медленно или режет
-// частые запросы. Ждём каждый ответ ограниченное время и уходим к следующему
-// зеркалу, иначе джоба висит десятки минут на одном мёртвом эндпоинте.
 const REQUEST_TIMEOUT = 100000;
+const dataUrl = (f) => new URL(`../data/${f}`, import.meta.url);
+
+// ── OpenStreetMap ────────────────────────────────────────────────────────────
 
 async function overpass() {
   let lastErr;
@@ -43,7 +57,6 @@ async function overpass() {
         });
         if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
         const text = await res.text();
-        // Перегруженный Overpass отвечает 200 и HTML-страницей с ошибкой.
         if (!text.trimStart().startsWith('{')) {
           throw new Error(`ответ не JSON: ${text.slice(0, 120).replace(/\s+/g, ' ')}`);
         }
@@ -57,23 +70,14 @@ async function overpass() {
   throw lastErr;
 }
 
-function buildAddress(t) {
-  const parts = [
-    t['addr:street'],
-    t['addr:housenumber'],
-  ].filter(Boolean);
-  const street = parts.join(', ');
-  return street || t['addr:full'] || '';
-}
-
-// В OSM под amenity=cinema попадают и аттракционы «5D/7D/9D» в ТЦ — это
-// кабинки с креслами, а не кинотеатры, и сеансов у них не бывает.
+// Под amenity=cinema попадают аттракционы «5D/7D» в ТЦ — это кабинки
+// с креслами, сеансов у них не бывает.
 const ATTRACTION = /(^|\W)(\d{1,2}\s*[-–]?\s*d\b|аттракцион|кинокабин)/i;
 
-function isAttraction(name, tags) {
-  if (tags.attraction || tags['cinema:type'] === 'attraction') return true;
-  return ATTRACTION.test(name) && !/^(3\s*d|imax)/i.test(name);
-}
+const isAttraction = (name, tags) =>
+  tags.attraction || tags['cinema:type'] === 'attraction'
+    ? true
+    : ATTRACTION.test(name) && !/^(3\s*d|imax)/i.test(name);
 
 function toCinema(el) {
   const t = el.tags || {};
@@ -90,49 +94,181 @@ function toCinema(el) {
     brand: t.brand || t.operator || '',
     lat: +lat.toFixed(6),
     lon: +lon.toFixed(6),
-    address: buildAddress(t),
+    address: [t['addr:street'], t['addr:housenumber']].filter(Boolean).join(', ') || t['addr:full'] || '',
     website: t.website || t['contact:website'] || '',
     phone: t.phone || t['contact:phone'] || '',
-    screens: t.screen ? +t.screen : null,
-    opening_hours: t.opening_hours || '',
+    source: 'osm',
   };
 }
 
-/** Убирает дубли: одна и та же точка бывает и нодой, и зданием. */
-function dedupe(list) {
-  const out = [];
-  for (const c of list) {
-    const dup = out.find(
-      (o) =>
-        o.name.toLowerCase() === c.name.toLowerCase() &&
-        Math.abs(o.lat - c.lat) < 0.0025 &&
-        Math.abs(o.lon - c.lon) < 0.0045,
-    );
-    if (!dup) {
-      out.push(c);
-      continue;
-    }
-    // оставляем запись с более полными данными
-    if (Object.values(c).filter(Boolean).length > Object.values(dup).filter(Boolean).length) {
-      out[out.indexOf(dup)] = c;
+// ── Геокодирование площадок, которых нет в OSM ───────────────────────────────
+
+const SUBURBS = /(реутов|подольск|красногорск|пушкино|зеленоград|химки|мытищи|люберцы|одинцово)/i;
+
+/** Варианты запроса: от точного к более общему. */
+function geocodeQueries(name) {
+  const city = SUBURBS.test(name) ? '' : ', Москва';
+  const bare = name.replace(/\(.*?\)/g, '').trim();
+  return [
+    `кинотеатр ${bare}${city}`,
+    `${bare}${city}`,
+    `${bare.split(/\s+/).slice(-2).join(' ')}${city}`,
+  ];
+}
+
+async function geocode(name) {
+  for (const q of geocodeQueries(name)) {
+    try {
+      const url =
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}` +
+        `&format=json&limit=1&countrycodes=ru&viewbox=36.7,56.2,38.2,55.3&bounded=1`;
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'cinemafinder/1.0 (github.com/veraxxxo/cinemafinder)' },
+        signal: AbortSignal.timeout(30000),
+      });
+      // Правила Nominatim — не чаще запроса в секунду.
+      await new Promise((r) => setTimeout(r, 1200));
+      if (!res.ok) {
+        console.warn(`[geo] «${q}»: HTTP ${res.status}`);
+        continue;
+      }
+      const hits = await res.json();
+      if (hits[0]) {
+        return {
+          lat: +Number(hits[0].lat).toFixed(6),
+          lon: +Number(hits[0].lon).toFixed(6),
+          via: q,
+          display: hits[0].display_name,
+        };
+      }
+    } catch (err) {
+      console.warn(`[geo] «${q}»: ${err.message}`);
     }
   }
-  return out;
+  return null;
 }
 
-const data = await overpass();
-const cinemas = dedupe(
-  (data.elements || []).map(toCinema).filter(Boolean),
-).sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+// ── Сборка ───────────────────────────────────────────────────────────────────
 
-if (cinemas.length < 50) {
-  throw new Error(`Подозрительно мало кинотеатров (${cinemas.length}) — не перезаписываю данные`);
+const seedCsv = await readFile(dataUrl('cinemas-seed.csv'), 'utf8');
+const seed = seedCsv
+  .trim()
+  .split('\n')
+  .slice(1)
+  .map((line) => {
+    const [name, site] = line.split(';');
+    return { name: name?.trim(), site: site?.trim() || '' };
+  })
+  .filter((s) => s.name);
+
+console.log(`[cinemas] В перечне площадок: ${seed.length}`);
+
+const osm = (await overpass()).elements.map(toCinema).filter(Boolean);
+console.log(`[cinemas] Из OpenStreetMap: ${osm.length}`);
+
+let cache = {};
+try {
+  cache = JSON.parse(await readFile(dataUrl('geocode.json'), 'utf8'));
+} catch {
+  /* кэша ещё нет */
 }
 
-await mkdir(new URL('../data/', import.meta.url), { recursive: true });
-await writeFile(
-  new URL('../data/cinemas.json', import.meta.url),
-  JSON.stringify({ updated: new Date().toISOString(), source: 'OpenStreetMap / Overpass API', count: cinemas.length, items: cinemas }, null, 1),
+const out = [];
+const usedOsm = new Set();
+const unresolved = [];
+let fromOsm = 0;
+let fromCache = 0;
+let fromGeo = 0;
+
+for (const s of seed) {
+  const hit = bestMatch(s.name, osm.filter((o) => !usedOsm.has(o.id)));
+
+  if (hit) {
+    usedOsm.add(hit.item.id);
+    fromOsm++;
+    out.push({
+      ...hit.item,
+      name: s.name,            // каноническое имя из перечня
+      osmName: hit.item.name,  // как называется в OSM — для отладки
+      website: s.site ? `https://${s.site}` : hit.item.website,
+      source: 'seed+osm',
+    });
+    continue;
+  }
+
+  const cached = cache[s.name];
+  if (cached?.lat) {
+    fromCache++;
+    out.push({
+      id: `s${normalize(s.name).replace(/\s/g, '-')}`,
+      name: s.name,
+      lat: cached.lat,
+      lon: cached.lon,
+      address: cached.display || '',
+      website: s.site ? `https://${s.site}` : '',
+      brand: '',
+      source: 'seed+geo',
+    });
+    continue;
+  }
+
+  const geo = await geocode(s.name);
+  if (geo) {
+    fromGeo++;
+    cache[s.name] = { ...geo, at: new Date().toISOString() };
+    out.push({
+      id: `s${normalize(s.name).replace(/\s/g, '-')}`,
+      name: s.name,
+      lat: geo.lat,
+      lon: geo.lon,
+      address: geo.display || '',
+      website: s.site ? `https://${s.site}` : '',
+      brand: '',
+      source: 'seed+geo',
+    });
+    console.log(`[geo] ${s.name} → ${geo.lat}, ${geo.lon} (по запросу «${geo.via}»)`);
+  } else {
+    unresolved.push(s.name);
+  }
+}
+
+// Кинотеатры, найденные только в OSM, тоже нужны — перечень не претендует
+// на полноту, он лишь гарантирует минимум.
+for (const o of osm) {
+  if (usedOsm.has(o.id)) continue;
+  if (bestMatch(o.name, out)) continue; // уже есть под другим именем
+  out.push(o);
+}
+
+out.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+
+console.log(
+  `\n[cinemas] Перечень: ${fromOsm} нашлись в OSM, ${fromCache} из кэша координат, ` +
+    `${fromGeo} геокодировано, ${unresolved.length} без координат`,
 );
+if (unresolved.length) console.log(`[cinemas] Без координат: ${unresolved.join(' | ')}`);
+console.log(`[cinemas] Итого площадок: ${out.length} (из них только в OSM: ${out.filter((c) => c.source === 'osm').length})`);
 
-console.log(`[cinemas] Сохранено ${cinemas.length} кинотеатров`);
+if (out.length < 50) {
+  throw new Error(`Подозрительно мало кинотеатров (${out.length}) — не перезаписываю данные`);
+}
+
+await mkdir(dataUrl(''), { recursive: true });
+await writeFile(
+  dataUrl('cinemas.json'),
+  JSON.stringify(
+    {
+      updated: new Date().toISOString(),
+      source: 'data/cinemas-seed.csv + OpenStreetMap (Overpass) + Nominatim',
+      count: out.length,
+      seedTotal: seed.length,
+      unresolved,
+      items: out,
+    },
+    null,
+    1,
+  ),
+);
+await writeFile(dataUrl('geocode.json'), JSON.stringify(cache, null, 1));
+
+console.log(`[cinemas] Сохранено ${out.length} кинотеатров`);

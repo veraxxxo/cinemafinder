@@ -117,6 +117,8 @@ try {
 
 // Сайты сетей: сколько площадок перечислено и есть ли адреса.
 const CHAINS = [
+  ['Афиша.ру — карта кинотеатров', 'https://www.afisha.ru/msk/cinema/cinema_list/?view=map'],
+  ['Афиша.ру — список кинотеатров', 'https://www.afisha.ru/msk/cinema/cinema_list/'],
   ['Формула Кино / Синема Парк', 'https://kinoteatr.ru/raspisanie-kinoteatrov/'],
   ['Кинотеатр.ру — кинотеатры Москвы', 'https://kinoteatr.ru/kinoteatry-moskvy/'],
   ['КАРО', 'https://karofilm.ru/theatres'],
@@ -142,6 +144,20 @@ for (const [name, url] of CHAINS) {
     console.log(`\n${name} — HTML, ${(html.length / 1024).toFixed(1)} КБ`);
     console.log(`   адресов на странице: ${uniq.length}`);
     console.log('   ' + uniq.slice(0, 12).join(' | '));
+
+    // Координаты — самое ценное: с ними площадку можно ставить на карту
+    // без геокодера. Ищем и подписанные пары, и «широта, долгота» подряд.
+    const coordPairs = [
+      ...html.matchAll(/"(?:lat|latitude)"\s*:\s*"?(5[45]\.\d+)"?[\s\S]{0,80}?"(?:lon|lng|longitude)"\s*:\s*"?(3[678]\.\d+)"?/gi),
+      ...html.matchAll(/\[\s*(5[45]\.\d{3,})\s*,\s*(3[678]\.\d{3,})\s*\]/g),
+      ...html.matchAll(/"coordinates"\s*:\s*\[\s*(3[678]\.\d{3,})\s*,\s*(5[45]\.\d{3,})/gi),
+    ];
+    console.log(`   пар координат в разметке: ${coordPairs.length}`);
+    if (coordPairs.length) {
+      console.log('   ' + coordPairs.slice(0, 5).map((m) => `${m[1]},${m[2]}`).join(' | '));
+      const i = html.indexOf(coordPairs[0][0]);
+      console.log('   контекст: ' + html.slice(Math.max(0, i - 260), i + 160).replace(/\s+/g, ' '));
+    }
   } catch (err) {
     console.log(`\n${name} — ОШИБКА: ${err.message}`);
   }
