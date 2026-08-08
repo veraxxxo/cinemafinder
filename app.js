@@ -4,6 +4,21 @@
 const MOSCOW = [55.7522, 37.6156];
 const $ = (id) => document.getElementById(id);
 
+// Подложки карты. Плитки Яндекса подключать нельзя — это против их условий,
+// а JS API требует ключа с привязкой к домену. «Схема» подобрана как самая
+// близкая по виду: цветная и светлая.
+const OSM = '&copy; OpenStreetMap';
+const BASEMAPS = {
+  'Схема': { url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', by: `${OSM}, &copy; CARTO` },
+  'Светлая': { url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', by: `${OSM}, &copy; CARTO` },
+  'Стандартная': { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', by: OSM },
+  'Спутник': {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    by: '&copy; Esri',
+  },
+  'Тёмная': { url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', by: `${OSM}, &copy; CARTO` },
+};
+
 // Сеансы после полуночи относятся к предыдущему вечеру: 00:40 → 24:40.
 const toMin = (hhmm) => {
   const [h, m] = hhmm.split(':').map(Number);
@@ -471,10 +486,16 @@ function setupControls() {
       'Фильтры и список кинотеатров слева работают.</div>';
   } else {
     map = L.map('map', { zoomControl: true, preferCanvas: true }).setView(MOSCOW, 11);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap, &copy; CARTO',
-    }).addTo(map);
+
+    const layers = {};
+    for (const [title, def] of Object.entries(BASEMAPS)) {
+      layers[title] = L.tileLayer(def.url, { maxZoom: 19, attribution: def.by });
+    }
+    const saved = localStorage.getItem('cf-basemap');
+    (layers[saved] || layers['Схема']).addTo(map);
+    L.control.layers(layers, null, { position: 'topright' }).addTo(map);
+    map.on('baselayerchange', (e) => localStorage.setItem('cf-basemap', e.name));
+
     cluster = L.markerClusterGroup({ maxClusterRadius: 45, showCoverageOnHover: false }).addTo(map);
   }
 

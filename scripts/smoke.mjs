@@ -104,6 +104,14 @@ console.log('\nстарт');
 check('оба кинотеатра в списке', (await names()).sort(), ['Октябрь', 'Художественный']);
 check('сводка за сегодня', await summary(), '2 кинотеатров · 5 сеансов · 3 фильмов');
 
+// По умолчанию показываются все площадки, даже без сеансов, — иначе при
+// редком расписании карта выглядит пустой. Дальше проверяем сам фильтр,
+// поэтому включаем «только с сеансами» явно.
+check('галка «только с сеансами» снята по умолчанию',
+  await page.$eval('#only-with-shows', (e) => e.checked), false);
+await page.check('#only-with-shows');
+await page.waitForTimeout(120);
+
 console.log('\nфильтр по времени: вечер');
 await page.click('#time-presets button[data-from="1080"]');
 await page.waitForTimeout(120);
@@ -119,6 +127,8 @@ check('время ночного сеанса', await times(), ['00:40']);
 console.log('\nсброс и фильтр по фильму');
 await page.click('#reset');
 await page.waitForTimeout(120);
+check('сброс не трогает «только с сеансами»',
+  await page.$eval('#only-with-shows', (e) => e.checked), true);
 await page.click('#movie-input');
 await page.fill('#movie-input', 'соля');
 await page.waitForTimeout(150);
@@ -134,6 +144,13 @@ console.log('\nпоиск по кинотеатру');
 await page.fill('#cinema-input', 'художест');
 await page.waitForTimeout(300);
 check('поиск сузил до одного', await names(), ['Художественный']);
+
+console.log('\nненайденный фильм объясняется, а не молчит');
+await page.fill('#movie-input', 'одиссея');
+await page.waitForTimeout(200);
+check('подсказка сообщает, что фильма нет',
+  await page.$$eval('#movie-suggest li.nores', (e) => e.length), 1);
+await page.fill('#movie-input', '');
 
 console.log('\nпереключение даты');
 await page.click('#reset');

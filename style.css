@@ -122,8 +122,8 @@ button.wide { width: 100%; margin-top: 4px; }
 #foot { padding: 9px 16px; font-size: 11px; color: var(--muted); border-top: 1px solid var(--line); }
 
 /* ── Карта ───────────────────────────────────────────────────────────────── */
-#map { flex: 1; background: #0b0e12; }
-.leaflet-container { background: #0b0e12; font: inherit; }
+#map { flex: 1; background: #e8e6e1; }
+.leaflet-container { background: #e8e6e1; font: inherit; }
 .leaflet-popup-content-wrapper, .leaflet-popup-tip {
   background: var(--panel); color: var(--text); border: 1px solid var(--line);
 }
@@ -172,3 +172,14 @@ button.wide { width: 100%; margin-top: 4px; }
 
 #movie-suggest li.nores { color: var(--muted); cursor: default; font-size: 13px; }
 #movie-suggest li.nores:hover { background: transparent; color: var(--muted); }
+
+/* Переключатель подложки: список читаемый и на светлой карте, и на тёмной. */
+.leaflet-control-layers {
+  background: var(--panel); color: var(--text);
+  border: 1px solid var(--line); border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.35);
+}
+.leaflet-control-layers-toggle { filter: invert(1) hue-rotate(180deg); }
+.leaflet-control-layers label { text-transform: none; letter-spacing: 0; font-size: 13px;
+                                font-weight: 400; color: var(--text); margin: 0; }
+.leaflet-control-layers-list { padding: 4px 8px 6px; }
