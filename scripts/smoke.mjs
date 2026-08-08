@@ -102,7 +102,7 @@ const summary = () => page.$eval('#summary', (e) => e.textContent.replace(/\s+/g
 
 console.log('\nстарт');
 check('оба кинотеатра в списке', (await names()).sort(), ['Октябрь', 'Художественный']);
-check('сводка за сегодня', await summary(), '2 кинотеатров · 5 сеансов · 3 фильмов');
+check('сводка за сегодня', await summary(), '2 кинотеатров · 2 с сеансами · 5 сеансов · 3 фильмов');
 
 // По умолчанию показываются все площадки, даже без сеансов, — иначе при
 // редком расписании карта выглядит пустой. Дальше проверяем сам фильтр,
@@ -138,7 +138,7 @@ await page.click('#movie-suggest li');
 await page.waitForTimeout(150);
 check('выбранный фильм показан тегом', await page.$$eval('.tag span', (e) => e.map((x) => x.textContent)), ['Солярис']);
 check('только площадки с Солярисом', (await names()).sort(), ['Октябрь', 'Художественный']);
-check('сводка по одному фильму', await summary(), '2 кинотеатров · 2 сеансов · 1 фильмов');
+check('сводка по одному фильму', await summary(), '2 кинотеатров · 2 с сеансами · 2 сеансов · 1 фильмов');
 
 console.log('\nпоиск по кинотеатру');
 await page.fill('#cinema-input', 'художест');
@@ -158,7 +158,7 @@ await page.fill('#cinema-input', '');
 await page.waitForTimeout(200);
 await page.click('#dates button:nth-child(2)');
 await page.waitForTimeout(150);
-check('на завтра только один сеанс', await summary(), '1 кинотеатров · 1 сеансов · 1 фильмов');
+check('на завтра только один сеанс', await summary(), '1 кинотеатров · 1 с сеансами · 1 сеансов · 1 фильмов');
 
 const shot = process.argv.indexOf('--shot');
 if (shot > -1) {

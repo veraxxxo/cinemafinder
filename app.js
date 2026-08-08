@@ -257,11 +257,14 @@ function render() {
     const li = document.createElement('li');
     const far = state.me ? ` · ${dist(state.me, c).toFixed(1)} км` : '';
     const titles = [...new Set(shows.map((s) => state.movieById.get(s.m)?.title || s.m))];
+    const where = [c.address, c.brand].filter(Boolean).join(' · ') || 'Москва';
 
     li.innerHTML =
       `<div class="name">${c.name}</div>` +
-      `<div class="meta">${c.address || c.brand || 'Москва'}${far}` +
-      (shows.length ? ` · ${shows.length} сеансов · ${titles.length} фильм(ов)` : '') +
+      `<div class="meta">${where}${far}` +
+      (shows.length
+        ? ` · <b>${shows.length}</b> сеансов · ${titles.length} фильм(ов)`
+        : ' · сеансов нет в данных') +
       `</div>` +
       (shows.length
         ? `<div class="times">${shows.slice(0, 14).map((s) => `<b>${s.t}</b>`).join('')}` +
@@ -280,8 +283,12 @@ function render() {
 
   const totalShows = [...result.values()].reduce((n, s) => n + s.length, 0);
   const films = new Set([...result.values()].flat().map((s) => s.m)).size;
+  const withShows = [...result.values()].filter((s) => s.length).length;
   $('summary').innerHTML =
-    `<b>${result.size}</b> кинотеатров · <b>${totalShows}</b> сеансов · <b>${films}</b> фильмов`;
+    `<b>${result.size}</b> кинотеатров` +
+    (totalShows
+      ? ` · <b>${withShows}</b> с сеансами · <b>${totalShows}</b> сеансов · <b>${films}</b> фильмов`
+      : ' · расписание для них ещё не собрано');
 }
 
 // ── Управление ───────────────────────────────────────────────────────────────
