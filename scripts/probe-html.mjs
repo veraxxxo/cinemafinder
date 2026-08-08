@@ -8,12 +8,24 @@
 // запросы с адресов дата-центров, но через прокси отвечает нормально.
 
 import { getText, stripTags } from './lib/util.mjs';
+import { fetchPage, closeBrowser } from './lib/browser.mjs';
 
 const PROXY = 'https://api.allorigins.win/raw?url=';
 const target = process.env.PROBE_PAGE || 'https://www.kinoafisha.info/russia/msk/schedule/';
 
 console.log('→', target);
-const html = await getText(PROXY + encodeURIComponent(target), { retries: 2, timeout: 90000 });
+
+// Некоторые сайты отбивают обычные запросы антибот-заглушкой, но пускают
+// настоящий браузер: PROBE_BROWSER=1 загружает страницу Chromium.
+let html;
+if (process.env.PROBE_BROWSER) {
+  const res = await fetchPage(target, { waitFor: process.env.PROBE_WAIT || null });
+  console.log(`   Chromium: HTTP ${res.status}`);
+  html = res.html;
+  await closeBrowser();
+} else {
+  html = await getText(PROXY + encodeURIComponent(target), { retries: 2, timeout: 90000 });
+}
 console.log(`   ${(html.length / 1024).toFixed(1)} КБ | <title>: ${stripTags((/<title>([\s\S]*?)<\/title>/i.exec(html) || [])[1] || '—')}`);
 
 const count = (re) => (html.match(re) || []).length;

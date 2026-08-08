@@ -10,6 +10,14 @@ on:
         description: 'URL страницы'
         type: string
         default: 'https://www.kinoafisha.info/russia/msk/schedule/'
+      browser:
+        description: 'Загрузить настоящим Chromium (обходит антибот-заглушки)'
+        type: boolean
+        default: false
+      wait:
+        description: 'CSS-селектор, которого дождаться после загрузки'
+        type: string
+        default: ''
 
 jobs:
   probe:
@@ -20,6 +28,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Поставить Chromium
+        if: inputs.browser
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
       - run: node scripts/probe-html.mjs
         env:
           PROBE_PAGE: ${{ inputs.page }}
+          PROBE_BROWSER: ${{ inputs.browser && '1' || '' }}
+          PROBE_WAIT: ${{ inputs.wait }}
