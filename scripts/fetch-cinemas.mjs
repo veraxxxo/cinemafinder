@@ -13,7 +13,7 @@ const ENDPOINTS = [
 
 // relation 102269 — Москва (включая ТиНАО). Берём и точки, и здания.
 const QUERY = `
-[out:json][timeout:180];
+[out:json][timeout:90];
 rel(102269); map_to_area -> .msk;
 (
   node(area.msk)["amenity"="cinema"];
@@ -23,18 +23,23 @@ rel(102269); map_to_area -> .msk;
 out center tags;
 `;
 
+// Overpass бесплатный и общий: под нагрузкой он отвечает медленно или режет
+// частые запросы. Ждём каждый ответ ограниченное время и уходим к следующему
+// зеркалу, иначе джоба висит десятки минут на одном мёртвом эндпоинте.
+const REQUEST_TIMEOUT = 100000;
+
 async function overpass() {
   let lastErr;
   for (const url of ENDPOINTS) {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        if (attempt) await new Promise((r) => setTimeout(r, 15000));
+        if (attempt) await new Promise((r) => setTimeout(r, 10000));
         console.log(`[cinemas] Overpass: ${url}`);
         const res = await fetch(url, {
           method: 'POST',
           headers: { 'User-Agent': UA, 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({ data: QUERY }),
-          signal: AbortSignal.timeout(190000),
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT),
         });
         if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
         const text = await res.text();
