@@ -1,0 +1,18 @@
+name: Диагностика источников (кинотеатры)
+
+# Ручной запуск. Сравнивает варианты запроса к OpenStreetMap и сторонние
+# источники площадок: что и сколько каждый добавляет к текущему списку.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/probe-cinemas.mjs
