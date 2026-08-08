@@ -61,6 +61,15 @@ function buildAddress(t) {
   return street || t['addr:full'] || '';
 }
 
+// В OSM под amenity=cinema попадают и аттракционы «5D/7D/9D» в ТЦ — это
+// кабинки с креслами, а не кинотеатры, и сеансов у них не бывает.
+const ATTRACTION = /(^|\W)(\d{1,2}\s*[-–]?\s*d\b|аттракцион|кинокабин)/i;
+
+function isAttraction(name, tags) {
+  if (tags.attraction || tags['cinema:type'] === 'attraction') return true;
+  return ATTRACTION.test(name) && !/^(3\s*d|imax)/i.test(name);
+}
+
 function toCinema(el) {
   const t = el.tags || {};
   const lat = el.lat ?? el.center?.lat;
@@ -68,7 +77,7 @@ function toCinema(el) {
   if (lat == null || lon == null) return null;
 
   const name = t['name:ru'] || t.name || t.brand || t.operator;
-  if (!name) return null;
+  if (!name || isAttraction(name, t)) return null;
 
   return {
     id: `${el.type[0]}${el.id}`,
