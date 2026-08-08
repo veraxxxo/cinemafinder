@@ -101,10 +101,14 @@ for (const s of rawShows) {
   const source = SOURCES.find((x) => x.id === s.source);
   let cinema = matchCinema(s.cinemaName);
 
-  // Источник дал адрес, но пары в OSM нет — превращаем адрес в координаты.
-  if (!cinema && !s.cinemaCoords && s.cinemaAddress) {
-    const found = await geocode({ name: s.cinemaName, address: s.cinemaAddress });
-    if (found) s.cinemaCoords = { lat: found.lat, lon: found.lon };
+  // Пары в OSM нет — ищем координаты по адресу, а если адреса источник не
+  // дал, то по самому названию. Иначе зал молча терялся бы вместе с сеансами.
+  if (!cinema && !s.cinemaCoords) {
+    const found = await geocode({ name: s.cinemaName, address: s.cinemaAddress || '' });
+    if (found) {
+      s.cinemaCoords = { lat: found.lat, lon: found.lon };
+      s.cinemaAddress = s.cinemaAddress || found.display || '';
+    }
   }
 
   if (!cinema && s.cinemaCoords) {
