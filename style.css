@@ -7,7 +7,8 @@
   --muted: #8b97a6;
   --accent: #ff5c39;
   --accent-2: #ffb03a;
-  --ok: #3fb950;
+  --ok: #2ea043;
+  --ok-bright: #3fb950;
   --radius: 10px;
   --panel-w: 380px;
 }
@@ -145,16 +146,23 @@ button.wide { width: 100%; margin-top: 4px; }
 .pin {
   display: grid; place-items: center;
   width: 30px; height: 30px; border-radius: 50%;
-  background: var(--accent); color: #fff; border: 2px solid #fff2;
+  background: var(--accent); color: #fff; border: 2px solid #ffffffcc;
   font: 700 12px/1 -apple-system, sans-serif;
-  box-shadow: 0 2px 8px rgba(0,0,0,.6);
+  box-shadow: 0 2px 8px rgba(0,0,0,.45);
 }
-.pin.dim { background: #47535f; }
+/* Зелёный — здесь есть сеанс по текущему фильтру. Серый — кинотеатр есть,
+   но под фильтр ничего не подходит. */
+.pin.has { background: var(--ok-bright); }
+.pin.dim { background: #8a949e; width: 20px; height: 20px; font-size: 10px; opacity: .85; }
 .marker-cluster div {
-  background: var(--accent); color: #fff; font: 700 12px/30px sans-serif;
+  background: var(--ok-bright); color: #fff; font: 700 12px/30px sans-serif;
   border-radius: 50%; width: 30px; height: 30px; margin-left: 5px; margin-top: 5px;
 }
-.marker-cluster { background: rgba(255,92,57,.32); border-radius: 50%; }
+.marker-cluster { background: rgba(63,185,80,.30); border-radius: 50%; }
+/* Скопление, в котором вообще нет подходящих сеансов, не должно спорить
+   за внимание с теми, где кино идёт. */
+.marker-cluster.empty div { background: #8a949e; }
+.marker-cluster.empty { background: rgba(138,148,158,.28); }
 
 #toggle-panel { display: none; position: fixed; z-index: 1000; left: 12px; top: 12px;
                 width: 42px; height: 42px; font-size: 18px; background: var(--panel); }

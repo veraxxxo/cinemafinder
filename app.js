@@ -213,9 +213,13 @@ function popupHtml(cinema, shows) {
 }
 
 function pinIcon(count) {
+  // Зелёный кружок с числом — здесь идёт то, что выбрано фильтром.
+  const size = count ? 30 : 20;
   return L.divIcon({
-    html: `<div class="pin${count ? '' : ' dim'}">${count || '·'}</div>`,
-    className: '', iconSize: [30, 30], iconAnchor: [15, 15],
+    html: `<div class="pin${count ? ' has' : ' dim'}">${count || ''}</div>`,
+    className: '',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
   });
 }
 
@@ -229,8 +233,10 @@ function render() {
     const layers = [];
     for (const [cid, shows] of result) {
       const c = state.cinemaById.get(cid);
-      const marker = L.marker([c.lat, c.lon], { icon: pinIcon(shows.length) })
-        .bindPopup(() => popupHtml(c, shows), { maxWidth: 320 });
+      const marker = L.marker([c.lat, c.lon], {
+        icon: pinIcon(shows.length),
+        showCount: shows.length,
+      }).bindPopup(() => popupHtml(c, shows), { maxWidth: 320 });
       markers.set(cid, marker);
       layers.push(marker);
     }
@@ -503,7 +509,20 @@ function setupControls() {
     L.control.layers(layers, null, { position: 'topright' }).addTo(map);
     map.on('baselayerchange', (e) => localStorage.setItem('cf-basemap', e.name));
 
-    cluster = L.markerClusterGroup({ maxClusterRadius: 45, showCoverageOnHover: false }).addTo(map);
+    cluster = L.markerClusterGroup({
+      maxClusterRadius: 45,
+      showCoverageOnHover: false,
+      // Скопление зелёное, только если внутри есть хоть один подходящий сеанс.
+      iconCreateFunction: (c) => {
+        const markers = c.getAllChildMarkers();
+        const shows = markers.reduce((n, m) => n + (m.options.showCount || 0), 0);
+        return L.divIcon({
+          html: `<div>${shows || markers.length}</div>`,
+          className: `marker-cluster${shows ? '' : ' empty'}`,
+          iconSize: [40, 40],
+        });
+      },
+    }).addTo(map);
   }
 
   syncTime();
