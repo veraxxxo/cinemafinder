@@ -61,23 +61,33 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/
-          if git diff --cached --quiet; then
-            echo "Изменений нет."
-            exit 0
-          fi
-          git commit -m "data: обновление $(date -u '+%Y-%m-%d %H:%M UTC')"
-          # В main могли влить код, пока джоба тянула данные, — подтягиваем и
-          # повторяем, иначе пуш отлетает с (fetch first).
+
+          # Данные генерируются целиком, поэтому сливать их с чужой версией
+          # нельзя: rebase упирается в конфликт содержимого JSON и роняет шаг.
+          # Вместо слияния откладываем свежие файлы, переезжаем на актуальный
+          # main и кладём их сверху — свежесобранное всегда побеждает.
+          cp data/cinemas.json data/schedule.json "$RUNNER_TEMP/"
+
           for attempt in 1 2 3; do
+            git fetch origin main
+            git reset --hard origin/main
+            cp "$RUNNER_TEMP/cinemas.json" "$RUNNER_TEMP/schedule.json" data/
+            git add data/
+
+            if git diff --cached --quiet; then
+              echo "Изменений нет."
+              exit 0
+            fi
+
+            git commit -m "data: обновление $(date -u '+%Y-%m-%d %H:%M UTC')"
             if git push; then
               echo "Запушено с попытки $attempt."
               exit 0
             fi
-            echo "Пуш отклонён, подтягиваю main и пробую снова…"
-            git pull --rebase origin main
+            echo "Пуш отклонён — в main успели влить ещё что-то, пробую снова…"
             sleep $((attempt * 5))
           done
+
           echo "::error::Не удалось запушить данные за 3 попытки"
           exit 1
 
