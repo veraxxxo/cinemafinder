@@ -6,6 +6,11 @@ name: Диагностика источников
 
 on:
   workflow_dispatch:
+    inputs:
+      urls:
+        description: 'Свои URL через пробел (пусто — список по умолчанию)'
+        type: string
+        default: ''
 
 jobs:
   probe:
@@ -16,3 +21,5 @@ jobs:
         with:
           node-version: '22'
       - run: node scripts/probe.mjs
+        env:
+          PROBE_URLS: ${{ inputs.urls }}

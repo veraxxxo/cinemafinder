@@ -6,16 +6,23 @@ import { get, jsonLd, embeddedState, stripTags, mskDate } from './lib/util.mjs';
 
 const date = mskDate(0);
 
-const CANDIDATES = [
-  `https://www.kinoafisha.info/russia/msk/schedule/`,
-  `https://www.kinoafisha.info/russia/msk/schedule/?date=${date}`,
-  `https://www.kinoafisha.info/rasp/`,
-  `https://www.kinoafisha.info/russia/msk/cinema/`,
-  `https://msk.kinoafisha.info/cinema/map/`,
-  `https://afisha.yandex.ru/moscow/cinema`,
-  `https://kudago.com/public-api/v1.4/events/?location=msk&categories=cinema&fields=id,title,place,dates&page_size=5`,
-  `https://cinema5.ru/moskva`,
-];
+const K = 'https://kudago.com/public-api/v1.4';
+const from = Math.floor(Date.parse(`${date}T00:00:00+03:00`) / 1000);
+const to = from + 5 * 86400;
+
+const CANDIDATES = (process.env.PROBE_URLS || '').trim()
+  ? process.env.PROBE_URLS.trim().split(/\s+/)
+  : [
+      // KudaGo: единственный источник, который пустил нас с IP дата-центра.
+      `${K}/movie-showings/?location=msk&page_size=3&actual_since=${from}&actual_until=${to}`,
+      `${K}/movieshowings/?location=msk&page_size=3`,
+      `${K}/movies/?location=msk&page_size=3&fields=id,title,running_time,genres`,
+      `${K}/places/?location=msk&categories=cinema&page_size=3&fields=id,title,address,coords,subway`,
+      `${K}/places/?location=msk&categories=cinema&page_size=1&fields=id,title`,
+      // Живые, но пока не разобранные.
+      `https://cinema5.ru/moskva`,
+      `https://www.kinoafisha.info/russia/msk/schedule/`,
+    ];
 
 for (const url of CANDIDATES) {
   console.log('\n' + '═'.repeat(78));
