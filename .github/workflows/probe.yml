@@ -1,0 +1,18 @@
+name: Диагностика источников
+
+# Ручной запуск. Показывает, что реально отдают сайты афиш: какие страницы
+# живы, есть ли в них JSON-LD / состояние SPA, сколько ссылок и времён.
+# По этому логу чинятся селекторы в scripts/sources/*.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/probe.mjs

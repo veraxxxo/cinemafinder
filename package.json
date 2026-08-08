@@ -1,0 +1,19 @@
+{
+  "name": "cinemafinder",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Карта кинотеатров Москвы с фильтрами по фильму и времени сеанса",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "cinemas": "node scripts/fetch-cinemas.mjs",
+    "schedule": "node scripts/fetch-schedule.mjs",
+    "update": "npm run cinemas && npm run schedule",
+    "probe": "node scripts/probe.mjs",
+    "serve": "npx --yes serve -l 8080 .",
+    "test": "node scripts/test.mjs"
+  },
+  "license": "MIT"
+}

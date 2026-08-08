@@ -1,0 +1,91 @@
+name: Обновление данных
+
+on:
+  schedule:
+    - cron: '25 3,13 * * *'   # 06:25 и 16:25 по Москве
+  workflow_dispatch:
+    inputs:
+      refresh_cinemas:
+        description: 'Перечитать кинотеатры из OpenStreetMap'
+        type: boolean
+        default: true
+  push:
+    paths:
+      - 'scripts/**'
+      - '.github/workflows/update.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Кинотеатры (OpenStreetMap)
+        id: cinemas
+        # Список меняется редко: обновляем по расписанию/по кнопке, но падение
+        # Overpass не должно ронять сбор расписания.
+        continue-on-error: true
+        if: >-
+          github.event_name != 'workflow_dispatch' ||
+          inputs.refresh_cinemas
+        run: node scripts/fetch-cinemas.mjs
+
+      - name: Проверить, что кинотеатры на месте
+        run: |
+          if [ ! -s data/cinemas.json ]; then
+            echo "::error::data/cinemas.json пуст и Overpass не ответил — прерываю"
+            exit 1
+          fi
+          node -e "const d=require('./data/cinemas.json');console.log('кинотеатров:',d.count??d.items.length)"
+
+      - name: Расписание сеансов
+        id: schedule
+        continue-on-error: true
+        env:
+          DAYS: '5'
+        run: node scripts/fetch-schedule.mjs
+
+      - name: Коммит
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "Изменений нет."
+          else
+            git commit -m "data: обновление $(date -u '+%Y-%m-%d %H:%M UTC')"
+            git push
+          fi
+
+      - name: Итог
+        run: |
+          echo "### Обновление данных" >> $GITHUB_STEP_SUMMARY
+          node -e "
+            const c=require('./data/cinemas.json');
+            let s=null; try{s=require('./data/schedule.json')}catch{}
+            const L=[];
+            L.push('- Кинотеатров: **'+(c.count??c.items.length)+'**');
+            if(s){
+              L.push('- Сеансов: **'+s.stats.shows+'**, фильмов: **'+s.stats.movies+'**, площадок с сеансами: **'+s.stats.cinemas+'**');
+              L.push('- Даты: '+(s.dates.join(', ')||'—'));
+              L.push('- Уровни парсинга: '+JSON.stringify(s.layers));
+              L.push('- Названий без совпадения с OSM: '+s.stats.unmatchedNames);
+            } else L.push('- Расписание собрать не удалось');
+            require('fs').appendFileSync(process.env.GITHUB_STEP_SUMMARY, L.join('\n')+'\n');
+          "
+
+      - name: Пометить сбой сбора расписания
+        if: steps.schedule.outcome == 'failure'
+        run: |
+          echo "::warning::Расписание не собралось — данные оставлены прежними. Смотри лог шага «Расписание сеансов»."

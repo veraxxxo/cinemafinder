@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CinemaFinder — карта кинотеатров Москвы</title>
+<meta name="description" content="Все кинотеатры Москвы на карте. Фильтр по фильму и времени сеанса: видно, что где и во сколько идёт.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="app">
+  <aside id="panel">
+    <header id="brand">
+      <h1>🎬 CinemaFinder</h1>
+      <p id="updated">загрузка данных…</p>
+    </header>
+
+    <section class="filters">
+      <div class="field">
+        <label>Дата</label>
+        <div id="dates" class="chips"></div>
+      </div>
+
+      <div class="field">
+        <label for="movie-input">Фильм</label>
+        <div id="movie-box" class="tagbox">
+          <div id="movie-tags" class="tags"></div>
+          <input id="movie-input" type="text" placeholder="Начни вводить название…" autocomplete="off">
+          <ul id="movie-suggest" hidden></ul>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Время сеанса <span id="time-label" class="mono"></span></label>
+        <div class="range">
+          <input id="time-from" type="range" min="360" max="1799" step="15" value="360">
+          <input id="time-to"   type="range" min="360" max="1799" step="15" value="1799">
+        </div>
+        <div id="time-presets" class="chips small">
+          <button data-from="360"  data-to="1799" class="on">весь день</button>
+          <button data-preset="now">от сейчас</button>
+          <button data-from="360"  data-to="840">утро</button>
+          <button data-from="840"  data-to="1080">день</button>
+          <button data-from="1080" data-to="1380">вечер</button>
+          <button data-from="1380" data-to="1799">ночь</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="cinema-input">Кинотеатр</label>
+        <input id="cinema-input" type="text" placeholder="Название или адрес…" autocomplete="off">
+      </div>
+
+      <div class="field row">
+        <label class="check"><input type="checkbox" id="only-with-shows" checked> только с сеансами</label>
+        <button id="geo" class="ghost" title="Показать ближайшие">📍 рядом</button>
+      </div>
+
+      <button id="reset" class="ghost wide">Сбросить фильтры</button>
+    </section>
+
+    <div id="summary"></div>
+    <ul id="results"></ul>
+    <footer id="foot">
+      Кинотеатры — <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>.
+      Расписание — <span id="src-list">—</span>.
+      <a href="https://github.com/veraxxxo/cinemafinder" target="_blank" rel="noopener">Исходники</a>
+    </footer>
+  </aside>
+
+  <main id="map"></main>
+  <button id="toggle-panel" aria-label="Фильтры">☰</button>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
