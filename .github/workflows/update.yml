@@ -9,6 +9,14 @@ on:
         description: 'Перечитать кинотеатры из OpenStreetMap'
         type: boolean
         default: true
+      days:
+        description: 'Сколько дат собрать'
+        type: string
+        default: '2'
+      movies:
+        description: 'Сколько фильмов на источник'
+        type: string
+        default: '8'
   push:
     paths:
       - 'scripts/**'
@@ -65,9 +73,9 @@ jobs:
           # Каждая страница через браузер — секунды, а их сотни. Берём немного
           # за прогон и опираемся на кэш: запуски идут дважды в сутки и
           # постепенно накрывают всю афишу, вместо того чтобы падать по лимиту.
-          DAYS: '2'
-          KA_MOVIE_LIMIT: '8'
-          KM_MOVIE_LIMIT: '6'
+          DAYS: ${{ inputs.days || '2' }}
+          KA_MOVIE_LIMIT: ${{ inputs.movies || '8' }}
+          KM_MOVIE_LIMIT: ${{ inputs.movies || '6' }}
         timeout-minutes: 14
         run: node scripts/fetch-schedule.mjs
 
