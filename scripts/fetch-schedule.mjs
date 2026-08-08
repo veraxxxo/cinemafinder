@@ -8,6 +8,7 @@
 
 import { readFile, writeFile } from 'node:fs/promises';
 import * as kudago from './sources/kudago.mjs';
+import * as manual from './sources/manual.mjs';
 import * as kinoafisha from './sources/kinoafisha.mjs';
 import * as kinomax from './sources/kinomax.mjs';
 import { mskDate, normName, nameTokens } from './lib/util.mjs';
@@ -15,7 +16,7 @@ import { geocode, save as saveGeocode } from './lib/geocode.mjs';
 
 // kinoafisha отдаёт 403 на IP дата-центров: из Actions молча пропускается,
 // но локально (с домашнего адреса) добирает то, чего нет в KudaGo.
-const SOURCES = [kinoafisha, kinomax, kudago];
+const SOURCES = [manual, kinoafisha, kinomax, kudago];
 const DAYS = Number(process.env.DAYS || 5);
 
 const cinemasFile = new URL('../data/cinemas.json', import.meta.url);
