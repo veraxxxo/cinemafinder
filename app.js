@@ -9,7 +9,12 @@ const toMin = (hhmm) => {
   const [h, m] = hhmm.split(':').map(Number);
   return (h < 6 ? h + 24 : h) * 60 + m;
 };
-const fromMin = (v) => `${String(Math.floor(v / 60) % 24).padStart(2, '0')}:${String(v % 60).padStart(2, '0')}`;
+// Значения за 24:00 — это ночь следующих суток; помечаем плюсом, чтобы
+// «05:45» не читалось как утро того же дня.
+const fromMin = (v) => {
+  const hhmm = `${String(Math.floor(v / 60) % 24).padStart(2, '0')}:${String(v % 60).padStart(2, '0')}`;
+  return v >= 1440 ? `${hhmm}⁺` : hhmm;
+};
 
 const norm = (s) => s.toLowerCase().replace(/ё/g, 'е').trim();
 
@@ -202,18 +207,20 @@ function pinIcon(count) {
 function render() {
   const result = filtered();
 
-  // карта
-  cluster.clearLayers();
-  markers.clear();
-  const layers = [];
-  for (const [cid, shows] of result) {
-    const c = state.cinemaById.get(cid);
-    const marker = L.marker([c.lat, c.lon], { icon: pinIcon(shows.length) })
-      .bindPopup(() => popupHtml(c, shows), { maxWidth: 320 });
-    markers.set(cid, marker);
-    layers.push(marker);
+  // карта (может отсутствовать, если Leaflet не загрузился — см. main)
+  if (cluster) {
+    cluster.clearLayers();
+    markers.clear();
+    const layers = [];
+    for (const [cid, shows] of result) {
+      const c = state.cinemaById.get(cid);
+      const marker = L.marker([c.lat, c.lon], { icon: pinIcon(shows.length) })
+        .bindPopup(() => popupHtml(c, shows), { maxWidth: 320 });
+      markers.set(cid, marker);
+      layers.push(marker);
+    }
+    cluster.addLayers(layers);
   }
-  cluster.addLayers(layers);
 
   // список: рядом со мной — по расстоянию, иначе — где больше сеансов
   const list = [...result.entries()];
@@ -247,6 +254,7 @@ function render() {
         : '');
 
     li.onclick = () => {
+      if (!map) return;
       map.setView([c.lat, c.lon], 15);
       const m = markers.get(cid);
       if (m) cluster.zoomToShowLayer(m, () => m.openPopup());
@@ -404,10 +412,12 @@ function setupControls() {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         state.me = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-        L.circleMarker([state.me.lat, state.me.lon], {
-          radius: 7, color: '#3fb950', fillColor: '#3fb950', fillOpacity: .9,
-        }).addTo(map).bindPopup('Вы здесь');
-        map.setView([state.me.lat, state.me.lon], 13);
+        if (map) {
+          L.circleMarker([state.me.lat, state.me.lon], {
+            radius: 7, color: '#3fb950', fillColor: '#3fb950', fillOpacity: .9,
+          }).addTo(map).bindPopup('Вы здесь');
+          map.setView([state.me.lat, state.me.lon], 13);
+        }
         render();
       },
       () => alert('Не удалось определить местоположение'),
@@ -419,7 +429,12 @@ function setupControls() {
     state.cinemaQuery = '';
     $('cinema-input').value = '';
     $('time-from').value = 360;
-    $('time-to').value = 1799;
+    $('time-to').value = 1785;
+    // Дата тоже часть фильтра — возвращаем на сегодня.
+    if (state.dates.length) {
+      state.date = state.dates[0];
+      [...$('dates').children].forEach((el, i) => el.classList.toggle('on', i === 0));
+    }
     syncTime();
     markPreset($('time-presets').firstElementChild);
     renderTags();
@@ -432,12 +447,21 @@ function setupControls() {
 // ── Старт ────────────────────────────────────────────────────────────────────
 
 (async function main() {
-  map = L.map('map', { zoomControl: true, preferCanvas: true }).setView(MOSCOW, 11);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap, &copy; CARTO',
-  }).addTo(map);
-  cluster = L.markerClusterGroup({ maxClusterRadius: 45, showCoverageOnHover: false }).addTo(map);
+  // Leaflet приходит с CDN. Если его заблокировали или сеть отвалилась,
+  // страница не должна умирать: список и фильтры работают и без карты.
+  if (typeof L === 'undefined') {
+    $('map').innerHTML =
+      '<div style="padding:24px;color:#8b97a6;font-size:14px">' +
+      'Карту не удалось загрузить: библиотека Leaflet недоступна с CDN.<br>' +
+      'Фильтры и список кинотеатров слева работают.</div>';
+  } else {
+    map = L.map('map', { zoomControl: true, preferCanvas: true }).setView(MOSCOW, 11);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap, &copy; CARTO',
+    }).addTo(map);
+    cluster = L.markerClusterGroup({ maxClusterRadius: 45, showCoverageOnHover: false }).addTo(map);
+  }
 
   syncTime();
   setupControls();
