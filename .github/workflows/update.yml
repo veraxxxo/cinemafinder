@@ -108,12 +108,22 @@ jobs:
           # нельзя: rebase упирается в конфликт содержимого JSON и роняет шаг.
           # Вместо слияния откладываем свежие файлы, переезжаем на актуальный
           # main и кладём их сверху — свежесобранное всегда побеждает.
-          cp data/cinemas.json data/schedule.json "$RUNNER_TEMP/"
+          # geocode.json — кэш координат. Его тоже надо переносить: без этого
+          # reset --hard стирал накопленное, и каждый прогон опрашивал
+          # Nominatim заново, по 1.2 секунды на запрос.
+          FILES="cinemas.json schedule.json geocode.json"
+          # Именно if, а не `[ -f … ] && cp`: под `bash -e` неудачная проверка
+          # роняет весь шаг, если файла ещё нет.
+          for f in $FILES; do
+            if [ -f "data/$f" ]; then cp "data/$f" "$RUNNER_TEMP/"; fi
+          done
 
           for attempt in 1 2 3; do
             git fetch origin main
             git reset --hard origin/main
-            cp "$RUNNER_TEMP/cinemas.json" "$RUNNER_TEMP/schedule.json" data/
+            for f in $FILES; do
+              if [ -f "$RUNNER_TEMP/$f" ]; then cp "$RUNNER_TEMP/$f" "data/$f"; fi
+            done
             git add data/
 
             if git diff --cached --quiet; then

@@ -86,7 +86,17 @@ export async function geocode({ name, address = '' }) {
   const store = await load();
   const key = `${name}|${address}`.trim();
 
-  if (key in store) return store[key];
+  if (key in store) {
+    const hit = store[key];
+    // Кэш вечный, и записи, сделанные до появления флага approx, его не несут.
+    // Достраиваем по описанию: иначе пометка «точка примерная» не появится
+    // ровно там, где она и понадобилась.
+    if (hit && hit.approx === undefined) {
+      hit.approx = /^(район|квартал|микрорайон|поселение|округ)\s/i.test(hit.display || '');
+      dirty = true;
+    }
+    return hit;
+  }
 
   for (const q of queries({ name, address })) {
     try {
