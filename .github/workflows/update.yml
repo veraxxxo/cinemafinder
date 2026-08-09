@@ -17,6 +17,10 @@ on:
         description: 'Сколько фильмов на источник'
         type: string
         default: '30'
+      event_days:
+        description: 'На сколько дней собрать события'
+        type: string
+        default: '7'
   push:
     paths:
       - 'scripts/**'
@@ -99,6 +103,17 @@ jobs:
         timeout-minutes: 14
         run: node scripts/fetch-schedule.mjs
 
+      - name: События города
+        id: events
+        # Отдельный слой карты: концерты, спектакли, выставки, фестивали.
+        # Источник открытый и быстрый, поэтому шаг не мешает расписанию кино
+        # и не роняет прогон, если ляжет.
+        continue-on-error: true
+        env:
+          EVENT_DAYS: ${{ inputs.event_days || '7' }}
+        timeout-minutes: 6
+        run: node scripts/fetch-events.mjs
+
       - name: Коммит
         run: |
           git config user.name  "github-actions[bot]"
@@ -111,7 +126,7 @@ jobs:
           # geocode.json — кэш координат. Его тоже надо переносить: без этого
           # reset --hard стирал накопленное, и каждый прогон опрашивал
           # Nominatim заново, по 1.2 секунды на запрос.
-          FILES="cinemas.json schedule.json geocode.json"
+          FILES="cinemas.json schedule.json geocode.json events.json"
           # Именно if, а не `[ -f … ] && cp`: под `bash -e` неудачная проверка
           # роняет весь шаг, если файла ещё нет.
           for f in $FILES; do
@@ -151,6 +166,8 @@ jobs:
             let s=null; try{s=require('./data/schedule.json')}catch{}
             const L=[];
             L.push('- Кинотеатров: **'+(c.count??c.items.length)+'**');
+            let ev=null; try{ev=require('./data/events.json')}catch{}
+            if(ev) L.push('- События: **'+ev.stats.slots+'** показов, **'+ev.stats.events+'** событий на **'+ev.stats.places+'** площадках');
             if(s){
               L.push('- Сеансов: **'+s.stats.shows+'**, фильмов: **'+s.stats.movies+'**, площадок с сеансами: **'+s.stats.cinemas+'**');
               L.push('- Даты: '+(s.dates.join(', ')||'—'));

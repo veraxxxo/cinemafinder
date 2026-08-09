@@ -10,6 +10,7 @@ import { makeCinemaMatcher } from './lib/stitch.mjs';
 import { _queries as geoQueries } from './lib/geocode.mjs';
 import { chainOf, chainIndex } from '../chains.js';
 import { msk as kudagoMsk, price as kudagoPrice, format as kudagoFormat } from './sources/kudago.mjs';
+import { occurrencesOf, price as eventPrice } from './sources/kudago-events.mjs';
 
 let passed = 0;
 const test = (name, fn) => {
@@ -164,6 +165,45 @@ test('город определяется по ссылке на кинотеа�
   assert.equal(cityOfCinemaUrl('https://www.kinoafisha.info/russia/spb/cinema/99/'), 'spb');
   assert.equal(cityOfCinemaUrl('/cinema/77/'), '?', 'относительная ссылка — город неизвестен');
   assert.equal(cityOfCinemaUrl(''), '?');
+});
+
+console.log('\nсобытия города');
+
+test('разовое событие попадает ровно в свой день', () => {
+  const one = {
+    start: Date.parse('2026-08-10T19:00:00+03:00') / 1000,
+    end: Date.parse('2026-08-10T22:00:00+03:00') / 1000,
+    start_time: '19:00',
+  };
+  assert.deepEqual(occurrencesOf(one, ['2026-08-09', '2026-08-10', '2026-08-11']),
+    [{ date: '2026-08-10', time: '19:00' }]);
+});
+
+test('длинная выставка режется по дням окна', () => {
+  // У KudaGo экспозиция описана одним интервалом на всё лето. Карте нужны
+  // конкретные дни, а время у такого события отсутствует — это «весь день».
+  const long = {
+    start: Date.parse('2026-07-01T10:00:00+03:00') / 1000,
+    end: Date.parse('2026-09-01T20:00:00+03:00') / 1000,
+    start_time: '10:00',
+  };
+  assert.deepEqual(occurrencesOf(long, ['2026-08-09', '2026-08-10']),
+    [{ date: '2026-08-09', time: null }, { date: '2026-08-10', time: null }]);
+});
+
+test('событие вне окна дат не попадает никуда', () => {
+  const past = {
+    start: Date.parse('2026-01-01T19:00:00+03:00') / 1000,
+    end: Date.parse('2026-01-01T21:00:00+03:00') / 1000,
+  };
+  assert.deepEqual(occurrencesOf(past, ['2026-08-09']), []);
+  assert.deepEqual(occurrencesOf({ start: null }, ['2026-08-09']), [], 'битая дата не роняет сбор');
+});
+
+test('цена события вытаскивается из свободного текста', () => {
+  assert.equal(eventPrice('от 1 500 руб.'), 1500);
+  assert.equal(eventPrice(''), null);
+  assert.equal(eventPrice('вход свободный'), null);
 });
 
 console.log('\nсети кинотеатров');
