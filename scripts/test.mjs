@@ -3,7 +3,7 @@
 // Сеть не нужна: `node scripts/test.mjs`.
 
 import assert from 'node:assert/strict';
-import { normalizeTitle, movieKey } from './sources/kinoafisha.mjs';
+import { normalizeTitle, movieKey, cityOfCinemaUrl } from './sources/kinoafisha.mjs';
 import { cinemaBlocks, sessionsIn, contentOf } from '../parse-showtimes.js';
 import { normName, nameTokens, timeToMinutes, jsonLd, embeddedState, stripTags } from './lib/util.mjs';
 import { makeCinemaMatcher } from './lib/stitch.mjs';
@@ -142,6 +142,15 @@ test('формат зала собирается из флагов', () => {
   assert.equal(kudagoFormat({ imax: true, three_d: true }), 'IMAX · 3D');
   assert.equal(kudagoFormat({ original_language: true }), 'ориг. язык');
   assert.equal(kudagoFormat({}), '');
+});
+
+test('город определяется по ссылке на кинотеатр', () => {
+  // На московской странице фильма попадались залы петербургской сети —
+  // отличить их можно только по адресу ссылки, по названию никак.
+  assert.equal(cityOfCinemaUrl('https://www.kinoafisha.info/russia/msk/cinema/1234/'), 'msk');
+  assert.equal(cityOfCinemaUrl('https://www.kinoafisha.info/russia/spb/cinema/99/'), 'spb');
+  assert.equal(cityOfCinemaUrl('/cinema/77/'), '?', 'относительная ссылка — город неизвестен');
+  assert.equal(cityOfCinemaUrl(''), '?');
 });
 
 console.log('\nсшивка «афиша ↔ OpenStreetMap»');

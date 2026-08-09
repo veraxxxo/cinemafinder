@@ -72,11 +72,29 @@ async function moviesInRelease() {
   return [...seen.values()];
 }
 
+// Ссылка на кинотеатр несёт город: /russia/msk/cinema/… против /russia/spb/… .
+// Это оказалось не теорией: в прогоне 09.08 в московское расписание попали
+// «Мираж Синема в ТРК Европолис», «в ТРК MARi» и «Отрадное» — петербургская
+// сеть в петербургских ТРК, 102 сеанса. Прежняя сшивка это прятала, сажая их
+// на московскую точку «Мираж».
+const CITY_IN_URL = /\/russia\/([a-z-]+)\//;
+
+/** Город из ссылки на кинотеатр; '?' — если по ссылке город не определить. */
+export const cityOfCinemaUrl = (url) => CITY_IN_URL.exec(url || '')?.[1] || '?';
+
 /** Разбирает страницу одного фильма: блоки залов и времена внутри них. */
 async function oneMovie(movie, date) {
   const content = contentOf(await page(`${movie.url}?date=${date}`, `${movie.title} ${date}`));
   const shows = [];
+  const cities = new Map();
+
   for (const block of cinemaBlocks(content)) {
+    const city = cityOfCinemaUrl(block.url);
+    cities.set(city, (cities.get(city) || 0) + 1);
+    // Город берём только по явному признаку: ссылка без /russia/<город>/
+    // может быть относительной, и выкидывать такие вслепую нельзя.
+    if (city !== '?' && city !== 'msk') continue;
+
     for (const s of sessionsIn(block.chunk)) {
       shows.push({
         date,
@@ -87,6 +105,14 @@ async function oneMovie(movie, date) {
         url: movie.url,
       });
     }
+  }
+
+  const foreign = [...cities].filter(([c]) => c !== 'msk' && c !== '?');
+  if (foreign.length) {
+    console.warn(
+      `[${id}]   ${movie.title}: отброшены залы других городов — ` +
+        foreign.map(([c, n]) => `${c}:${n}`).join(', '),
+    );
   }
 
   // Страница пришла живая и увесистая, а разбор пуст — так выглядит смена
