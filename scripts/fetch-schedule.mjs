@@ -11,9 +11,10 @@ import * as kudago from './sources/kudago.mjs';
 import * as manual from './sources/manual.mjs';
 import * as kinoafisha from './sources/kinoafisha.mjs';
 import * as kinomax from './sources/kinomax.mjs';
-import { mskDate, normName, nameTokens } from './lib/util.mjs';
+import { mskDate, normName } from './lib/util.mjs';
 import { geocode, save as saveGeocode } from './lib/geocode.mjs';
 import { finish as closeFetcher } from './lib/fetcher.mjs';
+import { makeCinemaMatcher } from './lib/stitch.mjs';
 
 // kinoafisha отдаёт 403 на IP дата-центров: из Actions молча пропускается,
 // но локально (с домашнего адреса) добирает то, чего нет в KudaGo.
@@ -27,49 +28,11 @@ const cinemas = JSON.parse(await readFile(cinemasFile, 'utf8')).items;
 
 // ── Сопоставление названий ───────────────────────────────────────────────────
 
-const exact = new Map();
-for (const c of cinemas) {
-  const key = normName(c.name);
-  if (key && !exact.has(key)) exact.set(key, c);
-}
-const tokenIndex = cinemas.map((c) => ({ c, tokens: nameTokens(c.name) }));
+const matchCinema = makeCinemaMatcher(cinemas);
 
-const matchCache = new Map();
-
-function matchCinema(rawName) {
-  if (matchCache.has(rawName)) return matchCache.get(rawName);
-
-  const key = normName(rawName);
-  let hit = exact.get(key) || null;
-
-  if (!hit && key.length > 3) {
-    for (const [k, c] of exact) {
-      if (k.length > 3 && (k.includes(key) || key.includes(k))) {
-        hit = c;
-        break;
-      }
-    }
-  }
-
-  if (!hit) {
-    const want = nameTokens(rawName);
-    let best = null;
-    let bestScore = 0;
-    for (const { c, tokens } of tokenIndex) {
-      let shared = 0;
-      for (const t of want) if (tokens.has(t)) shared++;
-      const score = shared / Math.max(1, Math.min(want.size, tokens.size));
-      if (shared && score > bestScore) {
-        bestScore = score;
-        best = c;
-      }
-    }
-    if (bestScore >= 0.6) hit = best;
-  }
-
-  matchCache.set(rawName, hit);
-  return hit;
-}
+// Куда какие названия легли — чтобы склейку было видно сразу, а не через
+// три дня по странному распределению сеансов на карте.
+const landedOn = new Map();
 
 // ── Сбор ─────────────────────────────────────────────────────────────────────
 
@@ -140,6 +103,9 @@ for (const s of rawShows) {
     continue;
   }
 
+  if (!landedOn.has(cinema.id)) landedOn.set(cinema.id, new Set());
+  landedOn.get(cinema.id).add(s.cinemaName);
+
   const title = source.normalizeTitle(s.movieTitle);
   const mid = source.movieKey(title);
   if (!title || !mid) continue;
@@ -178,6 +144,17 @@ const top = [...unmatched.entries()].sort((a, b) => b[1] - a[1]).slice(0, 25);
 if (top.length) {
   console.warn(`[schedule] Площадки без координат и без пары в OSM (${unmatched.size}):`);
   for (const [name, n] of top) console.warn(`   ${String(n).padStart(4)}  ${name}`);
+}
+
+// Одна точка на карте, несколько разных названий из афиши — почти всегда
+// ошибка сшивки: сеансы соседних залов сети сваливаются в одну булавку.
+const glued = [...landedOn.entries()].filter(([, names]) => names.size > 1);
+if (glued.length) {
+  const byId = new Map([...cinemas, ...extraCinemas.values()].map((c) => [c.id, c]));
+  console.warn(`[schedule] На одну точку легло несколько названий (${glued.length}):`);
+  for (const [cid, names] of glued.sort((a, b) => b[1].size - a[1].size).slice(0, 15)) {
+    console.warn(`   ${byId.get(cid)?.name || cid} ← ${[...names].join(' | ')}`);
+  }
 }
 
 const payload = {

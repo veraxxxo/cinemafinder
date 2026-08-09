@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { normalizeTitle, movieKey } from './sources/kinoafisha.mjs';
 import { cinemaBlocks, sessionsIn, contentOf } from '../parse-showtimes.js';
 import { normName, nameTokens, timeToMinutes, jsonLd, embeddedState, stripTags } from './lib/util.mjs';
+import { makeCinemaMatcher } from './lib/stitch.mjs';
 import { msk as kudagoMsk, price as kudagoPrice, format as kudagoFormat } from './sources/kudago.mjs';
 
 let passed = 0;
@@ -145,37 +146,10 @@ test('формат зала собирается из флагов', () => {
 
 console.log('\nсшивка «афиша ↔ OpenStreetMap»');
 
-// Повторяет три прохода из fetch-schedule.mjs.
-function makeMatcher(cinemas) {
-  const exact = new Map();
-  for (const c of cinemas) {
-    const k = normName(c.name);
-    if (k && !exact.has(k)) exact.set(k, c);
-  }
-  const idx = cinemas.map((c) => ({ c, tokens: nameTokens(c.name) }));
-
-  return (raw) => {
-    const key = normName(raw);
-    let hit = exact.get(key) || null;
-    if (!hit && key) {
-      for (const [k, c] of exact) {
-        if (k.length > 3 && (k.includes(key) || key.includes(k))) { hit = c; break; }
-      }
-    }
-    if (!hit) {
-      const want = nameTokens(raw);
-      let best = null, bestScore = 0;
-      for (const { c, tokens } of idx) {
-        let shared = 0;
-        for (const t of want) if (tokens.has(t)) shared++;
-        const score = shared / Math.max(1, Math.min(want.size, tokens.size));
-        if (shared && score > bestScore) { bestScore = score; best = c; }
-      }
-      if (bestScore >= 0.6) hit = best;
-    }
-    return hit;
-  };
-}
+// Матчер берётся из боевого модуля, а не пишется здесь заново: раньше тест
+// держал собственную копию логики, копия разошлась с оригиналом — и проверки
+// оставались зелёными при сломанной сшивке.
+const makeMatcher = makeCinemaMatcher;
 
 test('находит совпадения при разном написании', () => {
   const osm = [
@@ -197,6 +171,21 @@ test('не притягивает за уши посторонние назва�
   const match = makeMatcher([{ id: 'n1', name: 'Октябрь' }, { id: 'n2', name: 'Художественный' }]);
   assert.equal(match('Ашан Марьино'), null);
   assert.equal(match('Каро Вегас Кунцево'), null);
+});
+
+test('точка, названная одним брендом, не забирает залы сети', () => {
+  // Ровно то, на чём сшивка сломалась: в OSM есть безымянные точки «Мираж»,
+  // «Каро», «Люксор» — и раньше на них садились все залы соответствующей сети.
+  const match = makeMatcher([
+    { id: 'n1', name: 'Мираж' },
+    { id: 'n2', name: 'Каро' },
+    { id: 'n3', name: 'Мираж Синема Реутов' },
+  ]);
+
+  assert.equal(match('Мираж Синема Юго-Запад'), null, 'чужой зал сети не липнет к бренду');
+  assert.equal(match('КАРО 8 Саларис'), null, 'номер и ТЦ не делают из бренда конкретный зал');
+  assert.equal(match('Мираж')?.id, 'n1', 'само имя бренда по-прежнему находится');
+  assert.equal(match('Мираж Синема Реутов')?.id, 'n3', 'настоящий зал находится по различающей части');
 });
 
 console.log(`\n${passed} проверок пройдено${process.exitCode ? ' — есть падения' : ''}\n`);
