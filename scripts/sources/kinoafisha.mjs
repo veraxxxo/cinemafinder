@@ -73,13 +73,17 @@ async function moviesInRelease() {
 }
 
 // Ссылка на кинотеатр несёт город: /russia/msk/cinema/… против /russia/spb/… .
-// Это оказалось не теорией: в прогоне 09.08 в московское расписание попали
-// «Мираж Синема в ТРК Европолис», «в ТРК MARi» и «Отрадное» — петербургская
-// сеть в петербургских ТРК, 102 сеанса. Прежняя сшивка это прятала, сажая их
-// на московскую точку «Мираж».
+// Страховка на случай, если сайт подмешает чужой город. Пока не срабатывала
+// ни разу: подозрение на петербургские залы («Мираж Синема в ТРК Европолис»,
+// «в ТРК MARi», «Отрадное») не подтвердилось — Nominatim нашёл оба торговых
+// центра в Москве, Европолис на проспекте Мира, MARi в Марьине. Выпадали они
+// не из-за города, а из-за того, что их нет в OSM.
 const CITY_IN_URL = /\/russia\/([a-z-]+)\//;
 
 let urlSampleShown = false;
+
+/** Замер охвата страниц: копится за прогон, печатается сводкой в конце. */
+const stats = [];
 
 /** Город из ссылки на кинотеатр; '?' — если по ссылке город не определить. */
 export const cityOfCinemaUrl = (url) => CITY_IN_URL.exec(url || '')?.[1] || '?';
@@ -89,8 +93,11 @@ async function oneMovie(movie, date) {
   const content = contentOf(await page(`${movie.url}?date=${date}`, `${movie.title} ${date}`));
   const shows = [];
   const cities = new Map();
+  let blocksTotal = 0;
+  let blocksWithTimes = 0;
 
   for (const block of cinemaBlocks(content)) {
+    blocksTotal++;
     // Один образец ссылки за прогон: по нему видно, несёт ли разметка город
     // вообще. Без этого фильтр по городу нельзя ни проверить, ни опровергнуть.
     if (!urlSampleShown) {
@@ -103,6 +110,7 @@ async function oneMovie(movie, date) {
     // может быть относительной, и выкидывать такие вслепую нельзя.
     if (city !== '?' && city !== 'msk') continue;
 
+    let n = 0;
     for (const s of sessionsIn(block.chunk)) {
       shows.push({
         date,
@@ -112,8 +120,15 @@ async function oneMovie(movie, date) {
         movieTitle: movie.title,
         url: movie.url,
       });
+      n++;
     }
+    if (n) blocksWithTimes++;
   }
+
+  // Сколько залов вообще перечислено на странице против того, у скольких
+  // нашлись времена. Если первое сильно больше второго — виноват разбор;
+  // если оба малы — страница показывает не весь город, и добирать надо иначе.
+  stats.push({ movie: movie.title, date, blocksTotal, blocksWithTimes, shows: shows.length });
 
   const foreign = [...cities].filter(([c]) => c !== 'msk' && c !== '?');
   if (foreign.length) {
@@ -162,6 +177,17 @@ async function fromMoviePages(date) {
       return [];
     }
   });
+  const top = stats
+    .filter((x) => x.date === date && x.blocksTotal)
+    .sort((a, b) => b.blocksTotal - a.blocksTotal)
+    .slice(0, 5);
+  if (top.length) {
+    console.log(`[${id}] ${date}: залов на странице / из них с временами:`);
+    for (const x of top) {
+      console.log(`   ${String(x.blocksTotal).padStart(3)} / ${String(x.blocksWithTimes).padStart(3)}  ${x.movie}`);
+    }
+  }
+
   return batches.flat();
 }
 
