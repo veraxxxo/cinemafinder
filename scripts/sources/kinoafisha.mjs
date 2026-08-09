@@ -79,6 +79,8 @@ async function moviesInRelease() {
 // на московскую точку «Мираж».
 const CITY_IN_URL = /\/russia\/([a-z-]+)\//;
 
+let urlSampleShown = false;
+
 /** Город из ссылки на кинотеатр; '?' — если по ссылке город не определить. */
 export const cityOfCinemaUrl = (url) => CITY_IN_URL.exec(url || '')?.[1] || '?';
 
@@ -89,6 +91,12 @@ async function oneMovie(movie, date) {
   const cities = new Map();
 
   for (const block of cinemaBlocks(content)) {
+    // Один образец ссылки за прогон: по нему видно, несёт ли разметка город
+    // вообще. Без этого фильтр по городу нельзя ни проверить, ни опровергнуть.
+    if (!urlSampleShown) {
+      urlSampleShown = true;
+      console.log(`[${id}] образец ссылки на зал: ${block.url}`);
+    }
     const city = cityOfCinemaUrl(block.url);
     cities.set(city, (cities.get(city) || 0) + 1);
     // Город берём только по явному признаку: ссылка без /russia/<город>/

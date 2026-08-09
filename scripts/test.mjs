@@ -7,6 +7,7 @@ import { normalizeTitle, movieKey, cityOfCinemaUrl } from './sources/kinoafisha.
 import { cinemaBlocks, sessionsIn, contentOf } from '../parse-showtimes.js';
 import { normName, nameTokens, timeToMinutes, jsonLd, embeddedState, stripTags } from './lib/util.mjs';
 import { makeCinemaMatcher } from './lib/stitch.mjs';
+import { _queries as geoQueries } from './lib/geocode.mjs';
 import { msk as kudagoMsk, price as kudagoPrice, format as kudagoFormat } from './sources/kudago.mjs';
 
 let passed = 0;
@@ -151,6 +152,21 @@ test('город определяется по ссылке на кинотеа�
   assert.equal(cityOfCinemaUrl('https://www.kinoafisha.info/russia/spb/cinema/99/'), 'spb');
   assert.equal(cityOfCinemaUrl('/cinema/77/'), '?', 'относительная ссылка — город неизвестен');
   assert.equal(cityOfCinemaUrl(''), '?');
+});
+
+console.log('\nгеокодер');
+
+test('пробует опознаваемые куски названия, а не только строку целиком', () => {
+  // «Мираж Синема в ТРК «Европолис»» Nominatim не понимает — нужен «Европолис».
+  const q = geoQueries({ name: 'Мираж Синема в ТРК «Европолис»', address: '' });
+  assert.ok(q.includes('Европолис, Москва'), 'название ТРЦ берётся из кавычек');
+  // Полное название пробуется первым, и «ТРК» в нём законно. Ловим ровно тот
+  // огрызок, который получался, пока \b не срабатывал на кириллице.
+  assert.ok(!q.includes('в ТРК Европолис, Москва'), 'оборот «в ТРК» в огрызке не остаётся');
+
+  const p = geoQueries({ name: 'Киномакс-Релакс Пушкино', address: '' });
+  assert.ok(p.includes('Релакс Пушкино'), 'дефис после имени сети не остаётся');
+  assert.ok(p.every((s) => !s.includes('Москва')), 'городу-спутнику Москву не дописываем');
 });
 
 console.log('\nсшивка «афиша ↔ OpenStreetMap»');
