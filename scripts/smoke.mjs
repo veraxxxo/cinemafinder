@@ -32,7 +32,8 @@ const TOMORROW = mskDay(1);
 const CINEMAS = {
   count: 2,
   items: [
-    { id: 'n1', name: 'Октябрь', lat: 55.7522, lon: 37.5896, address: 'Новый Арбат, 24', website: '' },
+    // Сетевое имя намеренно: на нём проверяется фильтр по сети.
+    { id: 'n1', name: 'КАРО 11 Октябрь', lat: 55.7522, lon: 37.5896, address: 'Новый Арбат, 24', website: '' },
     { id: 'n2', name: 'Художественный', lat: 55.7469, lon: 37.5936, address: 'Арбатская пл., 14', website: '' },
   ],
 };
@@ -110,7 +111,7 @@ const times = () => page.$$eval('#results .times b', (els) => els.map((e) => e.t
 const summary = () => page.$eval('#summary', (e) => e.textContent.replace(/\s+/g, ' ').trim());
 
 console.log('\nстарт');
-check('оба кинотеатра в списке', (await names()).sort(), ['Октябрь', 'Художественный']);
+check('оба кинотеатра в списке', (await names()).sort(), ['КАРО 11 Октябрь', 'Художественный']);
 check('сводка за сегодня', await summary(), '2 кинотеатров · 2 с сеансами · 5 сеансов · 3 фильмов');
 
 // По умолчанию показываются все площадки, даже без сеансов, — иначе при
@@ -124,7 +125,7 @@ await page.waitForTimeout(120);
 console.log('\nфильтр по времени: вечер');
 await page.click('#time-presets button[data-from="1080"]');
 await page.waitForTimeout(120);
-check('остался только Октябрь', await names(), ['Октябрь']);
+check('остался только Октябрь', await names(), ['КАРО 11 Октябрь']);
 check('вечерние сеансы', (await times()).sort(), ['19:30', '22:00']);
 
 console.log('\nфильтр по времени: ночь');
@@ -146,8 +147,26 @@ check('подсказка нашла Солярис', await page.$$eval('#movie-
 await page.click('#movie-suggest li');
 await page.waitForTimeout(150);
 check('выбранный фильм показан тегом', await page.$$eval('.tag span', (e) => e.map((x) => x.textContent)), ['Солярис']);
-check('только площадки с Солярисом', (await names()).sort(), ['Октябрь', 'Художественный']);
+check('только площадки с Солярисом', (await names()).sort(), ['КАРО 11 Октябрь', 'Художественный']);
 check('сводка по одному фильму', await summary(), '2 кинотеатров · 2 с сеансами · 2 сеансов · 1 фильмов');
+
+console.log('\nфильтр по сети');
+check('чипсы сетей построены по данным',
+  await page.$$eval('#chains button', (els) => els.map((e) => e.textContent)),
+  ['КАРО1', 'вне сетей1']);
+
+await page.click('#chains button[data-chain="karo"]');
+await page.waitForTimeout(150);
+check('осталась только сеть КАРО', await names(), ['КАРО 11 Октябрь']);
+
+await page.click('#chains button[data-chain=""]');
+await page.waitForTimeout(150);
+check('две сети вместе дают обе площадки', (await names()).sort(), ['КАРО 11 Октябрь', 'Художественный']);
+
+await page.click('#reset');
+await page.waitForTimeout(150);
+check('сброс снимает выбор сети',
+  await page.$$eval('#chains button.on', (els) => els.length), 0);
 
 console.log('\nпоиск по кинотеатру');
 await page.fill('#cinema-input', 'художест');

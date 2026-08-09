@@ -3,6 +3,7 @@
 
 import { fetchDay } from './live.js';
 import { bestMatch } from './match.js';
+import { chainOf, chainIndex } from './chains.js';
 
 const MOSCOW = [55.7522, 37.6156];
 const $ = (id) => document.getElementById(id);
@@ -57,6 +58,7 @@ const state = {
   from: 360,
   to: 1799,
   cinemaQuery: '',
+  pickedChains: new Set(),
   onlyWithShows: false,
   me: null,
 };
@@ -119,8 +121,13 @@ async function load() {
     cinemas = cinemas.concat(schedule.extraCinemas.filter((c) => !known.has(c.id)));
   }
 
+  // Сеть считаем один раз при загрузке: фильтр и подписи обращаются к ней
+  // на каждой перерисовке, а название площадки не меняется.
+  for (const c of cinemas) c.chainId = chainOf(c.name, c.brand)?.id || '';
+
   state.cinemas = cinemas;
   state.cinemaById = new Map(cinemas.map((c) => [c.id, c]));
+  renderChains(cinemas);
 
   if (schedule) {
     state.movies = schedule.movies || [];
@@ -172,6 +179,7 @@ function filtered() {
   const result = new Map();
   for (const c of state.cinemas) {
     if (q && !norm(`${c.name} ${c.address} ${c.brand}`).includes(q)) continue;
+    if (state.pickedChains.size && !state.pickedChains.has(c.chainId || '')) continue;
     const shows = byCinema.get(c.id) || [];
     if (state.onlyWithShows && !shows.length) continue;
     shows.sort((a, b) => a.min - b.min);
@@ -365,6 +373,36 @@ function buildDateChips() {
   }
 }
 
+/**
+ * Чипсы сетей. Сетью считается любой узнаваемый бренд, даже с одной точкой на
+ * карте: «Москино Искра» — это Москино, и фильтр обязан её находить.
+ * Отдельная чипса «вне сетей» — для одиночных кинотеатров вроде «Иллюзиона».
+ */
+function renderChains(cinemas) {
+  const box = $('chains');
+  if (!box) return;
+
+  const { chains, loners } = chainIndex(cinemas);
+  box.innerHTML = '';
+
+  const chip = (id, title, count) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.dataset.chain = id;
+    b.innerHTML = `${title}<span>${count}</span>`;
+    b.addEventListener('click', () => {
+      if (state.pickedChains.has(id)) state.pickedChains.delete(id);
+      else state.pickedChains.add(id);
+      b.classList.toggle('on', state.pickedChains.has(id));
+      render();
+    });
+    box.appendChild(b);
+  };
+
+  for (const c of chains) chip(c.id, c.name, c.count);
+  if (loners) chip('', 'вне сетей', loners);
+}
+
 function renderTags() {
   const box = $('movie-tags');
   box.innerHTML = '';
@@ -514,6 +552,8 @@ function setupControls() {
 
   $('reset').addEventListener('click', () => {
     state.pickedMovies.clear();
+    state.pickedChains.clear();
+    [...$('chains').children].forEach((b) => b.classList.remove('on'));
     state.cinemaQuery = '';
     $('cinema-input').value = '';
     $('time-from').value = 360;

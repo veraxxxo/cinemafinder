@@ -8,6 +8,7 @@ import { cinemaBlocks, sessionsIn, contentOf } from '../parse-showtimes.js';
 import { normName, nameTokens, timeToMinutes, jsonLd, embeddedState, stripTags } from './lib/util.mjs';
 import { makeCinemaMatcher } from './lib/stitch.mjs';
 import { _queries as geoQueries } from './lib/geocode.mjs';
+import { chainOf, chainIndex } from '../chains.js';
 import { msk as kudagoMsk, price as kudagoPrice, format as kudagoFormat } from './sources/kudago.mjs';
 
 let passed = 0;
@@ -163,6 +164,40 @@ test('город определяется по ссылке на кинотеа�
   assert.equal(cityOfCinemaUrl('https://www.kinoafisha.info/russia/spb/cinema/99/'), 'spb');
   assert.equal(cityOfCinemaUrl('/cinema/77/'), '?', 'относительная ссылка — город неизвестен');
   assert.equal(cityOfCinemaUrl(''), '?');
+});
+
+console.log('\nсети кинотеатров');
+
+test('сеть опознаётся по названию, кириллица не ломает границы слов', () => {
+  // В JavaScript \b определена через ASCII: «\bкаро\b» не совпадает ни с чем.
+  // Здесь границы заданы пробелами — проверяем, что это правда работает.
+  assert.equal(chainOf('КАРО 11 Октябрь').name, 'КАРО');
+  assert.equal(chainOf('Москино Искра').name, 'Москино');
+  assert.equal(chainOf('Пять звёзд Новокузнецкая').name, 'Пять звёзд');
+});
+
+test('Синема Стар и Синема Парк не путаются', () => {
+  assert.equal(chainOf('Синема Стар Принц').name, 'Синема Стар');
+  assert.equal(chainOf('Синема Парк Мосфильм').name, 'Синема Парк');
+  assert.equal(chainOf('Киномакс XL').name, 'Киномакс', 'уточнение XL не мешает');
+});
+
+test('одиночный кинотеатр сетью не считается', () => {
+  assert.equal(chainOf('Иллюзион'), null);
+  assert.equal(chainOf('Художественный'), null);
+});
+
+test('сеть достаётся из brand, когда в названии её нет', () => {
+  assert.equal(chainOf('Октябрь', 'Сеть кинотеатров «КАРО»').name, 'КАРО');
+});
+
+test('сетью считается и бренд с одной точкой', () => {
+  const { chains, loners } = chainIndex([
+    { name: 'КАРО 11 Октябрь' }, { name: 'КАРО 8 Саларис' },
+    { name: 'Москино Искра' }, { name: 'Иллюзион' },
+  ]);
+  assert.deepEqual(chains.map((c) => [c.name, c.count]), [['КАРО', 2], ['Москино', 1]]);
+  assert.equal(loners, 1, 'одиночки считаются отдельно');
 });
 
 console.log('\nгеокодер');
