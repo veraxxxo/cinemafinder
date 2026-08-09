@@ -61,12 +61,38 @@ const SCHEDULE = {
 
 // ── Сервер ───────────────────────────────────────────────────────────────────
 
+// Слой событий: одна площадка с вечерним концертом и круглосуточной выставкой.
+const EVENTS = {
+  updated: '2026-08-09T09:00:00.000Z',
+  source: { id: 'test', title: 'Фикстура' },
+  dates: [TODAY, TOMORROW],
+  stats: { events: 2, slots: 3, places: 1, categories: 2 },
+  categories: [
+    { id: 'concert', name: 'Концерты', count: 1 },
+    { id: 'exhibition', name: 'Выставки', count: 2 },
+  ],
+  places: [{ id: 'p1', name: 'Зелёный театр', lat: 55.7297, lon: 37.6014, address: 'Парк Горького', site: '' }],
+  events: [
+    { id: 'e1', title: 'Джаз на закате', cats: ['concert'], price: 1500, url: '' },
+    { id: 'e2', title: 'Выставка света', cats: ['exhibition'], price: 0, url: '' },
+  ],
+  slots: [
+    { p: 'p1', e: 'e1', d: TODAY, t: '20:00' },
+    { p: 'p1', e: 'e2', d: TODAY, t: null },
+    { p: 'p1', e: 'e2', d: TOMORROW, t: null },
+  ],
+};
+
 const server = createServer(async (req, res) => {
   const path = decodeURIComponent(req.url.split('?')[0]);
 
   if (path === '/data/cinemas.json') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify(CINEMAS));
+  }
+  if (path === '/data/events.json') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify(EVENTS));
   }
   if (path === '/data/schedule.json') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -195,6 +221,34 @@ await page.waitForTimeout(200);
 await page.click('#dates button:nth-child(2)');
 await page.waitForTimeout(150);
 check('на завтра только один сеанс', await summary(), '1 кинотеатров · 1 с сеансами · 1 сеансов · 1 фильмов');
+
+console.log('\nслой событий');
+await page.click('#reset');
+await page.waitForTimeout(150);
+await page.click('#mode button[data-mode="events"]');
+await page.waitForTimeout(200);
+
+check('в списке площадка событий', await names(), ['Зелёный театр']);
+check('сводка по событиям', await summary(), '1 площадок · 2 показов · 2 событий');
+check('фильтры кино спрятаны',
+  await page.$eval('#movie-field', (e) => e.hidden), true);
+check('чипсы категорий появились',
+  await page.$$eval('#cats button', (els) => els.map((e) => e.textContent)),
+  ['Концерты1', 'Выставки2']);
+
+console.log('\nсобытие без времени переживает фильтр времени');
+await page.click('#time-presets button[data-from="1380"]');
+await page.waitForTimeout(150);
+check('ночной фильтр оставил выставку «весь день»',
+  await page.$$eval('#results .times b', (els) => els.map((e) => e.textContent)),
+  ['весь день']);
+
+console.log('\nфильтр по категории');
+await page.click('#reset');
+await page.waitForTimeout(150);
+await page.click('#cats button[data-cat="concert"]');
+await page.waitForTimeout(150);
+check('остались только концерты', await summary(), '1 площадок · 1 показов · 1 событий');
 
 const shot = process.argv.indexOf('--shot');
 if (shot > -1) {

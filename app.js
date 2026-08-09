@@ -59,6 +59,11 @@ const state = {
   to: 1799,
   cinemaQuery: '',
   pickedChains: new Set(),
+  // Слой карты: киносеансы или события города. У них разные данные и разные
+  // фильтры, общее — карта, даты и время.
+  mode: 'cinema',
+  events: null,
+  pickedCats: new Set(),
   onlyWithShows: false,
   me: null,
 };
@@ -129,11 +134,27 @@ async function load() {
   state.cinemaById = new Map(cinemas.map((c) => [c.id, c]));
   renderChains(cinemas);
 
+  // События — отдельный файл и отдельный слой. Его отсутствие не должно
+  // мешать карте кино: до первого сбора его просто нет.
+  try {
+    const ev = await loadJson('data/events.json');
+    state.events = {
+      ...ev,
+      placeById: new Map((ev.places || []).map((p) => [p.id, p])),
+      eventById: new Map((ev.events || []).map((e) => [e.id, e])),
+      slots: (ev.slots || []).map((x) => ({ ...x, min: x.t ? toMin(x.t) : null })),
+    };
+    renderCats();
+  } catch {
+    state.events = null;
+  }
+
   if (schedule) {
     state.movies = schedule.movies || [];
     state.movieById = new Map(state.movies.map((m) => [m.id, m]));
     state.shows = (schedule.shows || []).map((s) => ({ ...s, min: toMin(s.t) }));
     state.dates = schedule.dates || [];
+    state.scheduleDates = state.dates;
     // Открываемся на сегодня, если такие данные есть; иначе на ближайшей
     // будущей дате, а если всё в прошлом — на последней собранной.
     const today = mskToday();
@@ -186,6 +207,144 @@ function filtered() {
     result.set(c.id, shows);
   }
   return result;
+}
+
+/**
+ * События, подходящие под фильтр, сгруппированные по площадке.
+ *
+ * Время у события бывает пустым — так KudaGo помечает выставку или
+ * экспозицию, которая идёт весь день. Такие фильтр времени пропускает
+ * всегда: у них нет часа начала, и прятать их за ползунком неправильно.
+ */
+function filteredEvents() {
+  const byPlace = new Map();
+  if (!state.events) return byPlace;
+
+  const q = norm(state.cinemaQuery);
+
+  for (const sl of state.events.slots) {
+    if (sl.d !== state.date) continue;
+    if (sl.min !== null && (sl.min < state.from || sl.min > state.to)) continue;
+
+    const ev = state.events.eventById.get(sl.e);
+    if (!ev) continue;
+    if (state.pickedCats.size && !(ev.cats || []).some((c) => state.pickedCats.has(c))) continue;
+
+    const place = state.events.placeById.get(sl.p);
+    if (!place) continue;
+    if (q && !norm(`${place.name} ${place.address}`).includes(q)) continue;
+
+    if (!byPlace.has(sl.p)) byPlace.set(sl.p, []);
+    byPlace.get(sl.p).push({ ...sl, ev });
+  }
+
+  for (const list of byPlace.values()) {
+    list.sort((a, b) => (a.min ?? -1) - (b.min ?? -1));
+  }
+  return byPlace;
+}
+
+/** Попап площадки событий: что и во сколько там идёт. */
+function eventPopupHtml(place, slots) {
+  const rows = slots
+    .slice(0, 20)
+    .map((s) => {
+      const when = s.t ? `<b>${s.t}</b>` : '<b>весь день</b>';
+      const price = s.ev.price === 0 ? ' · бесплатно' : s.ev.price ? ` · от ${s.ev.price} ₽` : '';
+      const title = s.ev.url
+        ? `<a href="${s.ev.url}" target="_blank" rel="noopener">${s.ev.title}</a>`
+        : s.ev.title;
+      return `<div class="times">${when} ${title}${price}</div>`;
+    })
+    .join('');
+
+  const route = `<a href="https://yandex.ru/maps/?rtext=~${place.lat},${place.lon}" target="_blank" rel="noopener">маршрут</a>`;
+  const site = place.site ? ` · <a href="${place.site}" target="_blank" rel="noopener">сайт</a>` : '';
+
+  return (
+    `<h3>${place.name}</h3>` +
+    `<div class="addr">${place.address || 'адрес не указан'} · ${route}${site}</div>` +
+    (rows || '<div class="addr">Событий по текущему фильтру нет.</div>') +
+    (slots.length > 20 ? `<div class="addr">…и ещё ${slots.length - 20}</div>` : '')
+  );
+}
+
+/** Отрисовка слоя событий: те же кластеры и тот же список, свои данные. */
+function renderEvents() {
+  const result = filteredEvents();
+
+  if (cluster) {
+    cluster.clearLayers();
+    markers.clear();
+    const layers = [];
+    for (const [pid, slots] of result) {
+      const p = state.events.placeById.get(pid);
+      const marker = L.marker([p.lat, p.lon], {
+        icon: pinIcon(slots.length, true),
+        showCount: slots.length,
+      }).bindPopup(() => eventPopupHtml(p, slots), { maxWidth: 320 });
+      markers.set(pid, marker);
+      layers.push(marker);
+    }
+    cluster.addLayers(layers);
+  }
+
+  const list = [...result.entries()].sort(([aId, aS], [bId, bS]) => {
+    const a = state.events.placeById.get(aId);
+    const b = state.events.placeById.get(bId);
+    if (state.me) return dist(state.me, a) - dist(state.me, b);
+    return bS.length - aS.length || a.name.localeCompare(b.name, 'ru');
+  });
+
+  const ul = $('results');
+  ul.innerHTML = list.length
+    ? ''
+    : '<li class="empty">Ничего не нашлось.<br>Смягчи фильтры или выбери другую дату.</li>';
+
+  for (const [pid, slots] of list.slice(0, 300)) {
+    const p = state.events.placeById.get(pid);
+    const li = document.createElement('li');
+    const far = state.me ? ` · ${dist(state.me, p).toFixed(1)} км` : '';
+    li.innerHTML =
+      `<div class="name">${p.name}</div>` +
+      `<div class="meta">${p.address || 'Москва'}${far} · <b>${slots.length}</b> событий</div>` +
+      `<div class="times">${slots.slice(0, 6).map((s) => `<b>${s.t || 'весь день'}</b>`).join('')}` +
+      (slots.length > 6 ? `<b>+${slots.length - 6}</b>` : '') + `</div>`;
+    li.onclick = () => {
+      if (!map) return;
+      map.setView([p.lat, p.lon], 15);
+      const m = markers.get(pid);
+      if (m) cluster.zoomToShowLayer(m, () => m.openPopup());
+      if (window.innerWidth <= 820) $('panel').classList.remove('open');
+    };
+    ul.appendChild(li);
+  }
+
+  const total = [...result.values()].reduce((n, s) => n + s.length, 0);
+  const uniq = new Set([...result.values()].flat().map((s) => s.e)).size;
+  $('summary').innerHTML =
+    `<b>${result.size}</b> площадок · <b>${total}</b> показов · <b>${uniq}</b> событий`;
+}
+
+/** Чипсы категорий событий: подпись и число показов за окно сбора. */
+function renderCats() {
+  const box = $('cats');
+  if (!box || !state.events) return;
+  box.innerHTML = '';
+
+  for (const c of state.events.categories || []) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.dataset.cat = c.id;
+    b.innerHTML = `${c.name}<span>${c.count}</span>`;
+    b.addEventListener('click', () => {
+      if (state.pickedCats.has(c.id)) state.pickedCats.delete(c.id);
+      else state.pickedCats.add(c.id);
+      b.classList.toggle('on', state.pickedCats.has(c.id));
+      render();
+    });
+    box.appendChild(b);
+  }
 }
 
 const dist = (a, b) => {
@@ -248,11 +407,11 @@ function popupHtml(cinema, shows) {
   );
 }
 
-function pinIcon(count) {
+function pinIcon(count, isEvent = false) {
   // Зелёный кружок с числом — здесь идёт то, что выбрано фильтром.
   const size = count ? 30 : 20;
   return L.divIcon({
-    html: `<div class="pin${count ? ' has' : ' dim'}">${count || ''}</div>`,
+    html: `<div class="pin${count ? ' has' : ' dim'}${isEvent ? ' ev' : ''}">${count || ''}</div>`,
     className: '',
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
@@ -260,6 +419,8 @@ function pinIcon(count) {
 }
 
 function render() {
+  if (state.mode === 'events') return renderEvents();
+
   const result = filtered();
 
   // карта (может отсутствовать, если Leaflet не загрузился — см. main)
@@ -550,9 +711,37 @@ function setupControls() {
     );
   });
 
+  // Переключатель слоя. Даты у кино и у событий разные — при смене слоя
+  // подбираем ближайшую доступную, иначе список молча оказывается пустым.
+  $('mode').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-mode]');
+    if (!b || b.dataset.mode === state.mode) return;
+
+    state.mode = b.dataset.mode;
+    [...$('mode').children].forEach((x) => x.classList.toggle('on', x === b));
+
+    const events = state.mode === 'events';
+    $('cats-field').hidden = !events;
+    for (const id of ['movie-field', 'chains-field', 'only-with-shows-field']) {
+      const el = $(id);
+      if (el) el.hidden = events;
+    }
+
+    const dates = events ? state.events?.dates || [] : state.scheduleDates || [];
+    if (dates.length && !dates.includes(state.date)) {
+      const today = mskToday();
+      state.date = dates.find((d) => d === today) || dates.find((d) => d > today) || dates[0];
+    }
+    state.dates = dates;
+    buildDateChips();
+    render();
+  });
+
   $('reset').addEventListener('click', () => {
     state.pickedMovies.clear();
     state.pickedChains.clear();
+    state.pickedCats.clear();
+    [...$('cats').children].forEach((b) => b.classList.remove('on'));
     [...$('chains').children].forEach((b) => b.classList.remove('on'));
     state.cinemaQuery = '';
     $('cinema-input').value = '';

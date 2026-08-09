@@ -20,12 +20,22 @@
     </header>
 
     <section class="filters">
+      <div id="mode" class="chips seg">
+        <button data-mode="cinema" class="on">🎬 Кино</button>
+        <button data-mode="events">🎭 События</button>
+      </div>
+
+      <div class="field" id="cats-field" hidden>
+        <label>Категория</label>
+        <div id="cats" class="chips small"></div>
+      </div>
+
       <div class="field">
         <label>Дата</label>
         <div id="dates" class="chips"></div>
       </div>
 
-      <div class="field">
+      <div class="field" id="movie-field">
         <label for="movie-input">Фильм</label>
         <div id="movie-box" class="tagbox">
           <div id="movie-tags" class="tags"></div>
@@ -50,17 +60,17 @@
         </div>
       </div>
 
-      <div class="field">
+      <div class="field" id="cinema-field">
         <label for="cinema-input">Кинотеатр</label>
         <input id="cinema-input" type="text" placeholder="Название или адрес…" autocomplete="off">
       </div>
 
-      <div class="field">
+      <div class="field" id="chains-field">
         <label>Сеть</label>
         <div id="chains" class="chips small"></div>
       </div>
 
-      <div class="field row">
+      <div class="field row" id="only-with-shows-field">
         <label class="check"><input type="checkbox" id="only-with-shows"> только с сеансами</label>
         <button id="geo" class="ghost" title="Показать ближайшие">📍 рядом</button>
       </div>
