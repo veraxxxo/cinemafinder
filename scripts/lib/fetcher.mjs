@@ -4,16 +4,19 @@
 // запросы, kinomax показывает страницу-заглушку «Верификация». Один способ
 // загрузки поэтому ненадёжен, и вместо него — цепочка:
 //
-//   1. настоящий Chromium — проходит проверки, которые смотрят на TLS,
-//      заголовки и исполнение скриптов;
-//   2. прямой запрос — работает с обычного адреса (локальный запуск);
-//   3. открытые прокси по очереди — медленно, но переживает блокировку по IP.
+//   1. Scrapling — подделывает TLS-отпечаток и заголовки настоящего Chrome,
+//      а в скрытом режиме убирает и следы автоматизации в браузере;
+//   2. настоящий Chromium — если Scrapling не установлен;
+//   3. прямой запрос — работает с обычного адреса (локальный запуск);
+//   4. открытые прокси по очереди — медленно, но переживает блокировку по IP.
 //
 // Удачно загруженные страницы кладутся в кэш: если прогон оборвётся на
 // середине, следующий не начнёт с нуля.
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { promisify } from 'node:util';
 import { getText, stripTags } from './util.mjs';
 import { browserAvailable, fetchPage, closeBrowser } from './browser.mjs';
 
@@ -27,6 +30,26 @@ const CACHE_DIR = new URL('../../data/cache/', import.meta.url);
 const CACHE_TTL = Number(process.env.CACHE_TTL_MIN || 180) * 60000;
 
 const key = (url) => createHash('sha1').update(url).digest('hex').slice(0, 16);
+const execFileAsync = promisify(execFile);
+
+/**
+ * Загрузка через Scrapling: подделывает TLS-отпечаток и заголовки, а в
+ * скрытом режиме — ещё и следы автоматизации в браузере. Проверки, которые
+ * смотрят не на адрес, а на то, как клиент здоровается, это проходит.
+ */
+async function viaScrapling(url, { stealth = false, waitFor = null } = {}) {
+  const args = ['scripts/fetch_page.py', url];
+  if (stealth) args.push('--stealth');
+  if (waitFor) args.push('--wait', waitFor);
+
+  const { stdout, stderr } = await execFileAsync('python3', args, {
+    cwd: new URL('../../', import.meta.url).pathname,
+    maxBuffer: 64 * 1024 * 1024,
+    timeout: 150000,
+  });
+  if (stderr.trim()) console.log(`[scrapling] ${stderr.trim().split('\n').at(-1)}`);
+  return stdout;
+}
 
 async function fromCache(url) {
   if (process.env.NO_CACHE) return null;
@@ -62,6 +85,7 @@ export function looksBlocked(html, { expect } = {}) {
 }
 
 let browserOk = null;
+let scraplingOk = null;
 let proxyOrder = [...PROXIES.keys()];
 
 /**
@@ -76,6 +100,19 @@ export async function loadPage(url, { expect = null, waitFor = null, label = '' 
   }
 
   const attempts = [];
+
+  // Scrapling идёт первым: он дешевле браузера и снимает как раз те
+  // проверки, на которых спотыкается обычный запрос.
+  if (scraplingOk !== false) {
+    attempts.push(['Scrapling', async () => {
+      const html = await viaScrapling(url, { waitFor });
+      if (looksBlocked(html, { expect })) {
+        // Обычного запроса не хватило — поднимаем скрытый браузер.
+        return viaScrapling(url, { stealth: true, waitFor });
+      }
+      return html;
+    }]);
+  }
 
   if (browserOk !== false) {
     attempts.push(['Chromium', async () => {
@@ -113,7 +150,9 @@ export async function loadPage(url, { expect = null, waitFor = null, label = '' 
       await toCache(url, html);
       return html;
     } catch (err) {
-      console.warn(`[fetch] ${label || url}: ${how} — ${err.message}`);
+      // Если Scrapling не установлен, второй раз его дёргать незачем.
+      if (how === 'Scrapling' && /не установлен|ENOENT/.test(err.message)) scraplingOk = false;
+      console.warn(`[fetch] ${label || url}: ${how} — ${err.message.split('\n')[0]}`);
     }
   }
 

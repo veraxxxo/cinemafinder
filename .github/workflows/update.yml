@@ -62,6 +62,14 @@ jobs:
           fi
           node -e "const d=require('./data/cinemas.json');console.log('кинотеатров:',d.count??d.items.length)"
 
+      - name: Поставить Scrapling
+        # Обходит проверки по отпечатку клиента, на которых спотыкается
+        # обычный запрос. Не встанет — сбор уйдёт на браузер и прокси.
+        continue-on-error: true
+        run: |
+          pip install --quiet -r requirements.txt
+          scrapling install || true
+
       - name: Поставить Chromium
         # kinoafisha отбивает обычные HTTP-запросы, но пускает настоящий
         # браузер. Если установка не удалась — парсер сам уйдёт на прокси.
