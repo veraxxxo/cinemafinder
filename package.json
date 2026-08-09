@@ -13,6 +13,7 @@
     "events": "node scripts/fetch-events.mjs",
     "update": "npm run cinemas && npm run schedule && npm run events",
     "probe": "node scripts/probe.mjs",
+    "access": "node scripts/check-access.mjs",
     "serve": "npx --yes serve -l 8080 .",
     "test": "node scripts/test.mjs"
   },
