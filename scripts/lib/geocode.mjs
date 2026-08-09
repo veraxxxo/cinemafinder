@@ -9,6 +9,12 @@ import { readFile, writeFile } from 'node:fs/promises';
 const FILE = new URL('../../data/geocode.json', import.meta.url);
 const UA = 'cinemafinder/1.0 (github.com/veraxxxo/cinemafinder)';
 
+// Типы ответа Nominatim, которые означают «это район, а не здание».
+const APPROX_KINDS = new Set([
+  'suburb', 'quarter', 'neighbourhood', 'city_district', 'district',
+  'borough', 'residential', 'place', 'boundary',
+]);
+
 // Города-спутники в перечне есть, а значит «Москва» к ним дописывать нельзя.
 const SUBURBS = /(реутов|подольск|красногорск|пушкино|зеленоград|химки|мытищи|люберцы|одинцово|балашиха|котельники|видное)/i;
 
@@ -100,6 +106,10 @@ export async function geocode({ name, address = '' }) {
           lon: +Number(hits[0].lon).toFixed(6),
           via: q,
           display: hits[0].display_name,
+          // Район или квартал вместо здания: «Мираж Синема Отрадное» нашёлся
+          // как «район Отрадное», и булавка встала в его центр. Пусть карта
+          // говорит об этом честно, а не изображает точный адрес.
+          approx: APPROX_KINDS.has(hits[0].type) || APPROX_KINDS.has(hits[0].class),
         };
         store[key] = found;
         dirty = true;

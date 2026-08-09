@@ -78,6 +78,7 @@ for (const s of rawShows) {
     if (found) {
       s.cinemaCoords = { lat: found.lat, lon: found.lon };
       s.cinemaAddress = s.cinemaAddress || found.display || '';
+      s.cinemaApprox = Boolean(found.approx);
     }
   }
 
@@ -93,6 +94,8 @@ for (const s of rawShows) {
         address: s.cinemaAddress || '',
         website: s.cinemaUrl || '',
         source: s.source,
+        // Нашлось как район, а не как здание: булавка стоит в центре района.
+        approx: s.cinemaApprox || undefined,
       });
     }
     cinema = extraCinemas.get(id);

@@ -225,9 +225,16 @@ function popupHtml(cinema, shows) {
     `<a href="https://afisha.yandex.ru/moscow/search?text=${q}" target="_blank" rel="noopener">Яндекс&nbsp;Афиша</a> · ` +
     `<a href="https://www.kinoafisha.info/search/?text=${q}" target="_blank" rel="noopener">Кино&nbsp;Афиша</a></div>`;
 
+  // Часть площадок геокодер нашёл только как район, а не как здание: булавка
+  // стоит в центре района. Обещать в этом случае точный адрес нельзя.
+  const approx = cinema.approx
+    ? '<div class="addr">Точка примерная: адрес зала не найден, показан центр района.</div>'
+    : '';
+
   return (
     `<h3>${cinema.name}</h3>` +
     `<div class="addr">${cinema.address || 'адрес не указан'} · ${route}${site}</div>` +
+    approx +
     (films || '<div class="addr">Сеансов по текущему фильтру нет.</div>') +
     afisha
   );
