@@ -11,6 +11,14 @@ on:
         description: 'Свои URL через пробел (пусто — список по умолчанию)'
         type: string
         default: ''
+      browser:
+        description: 'Через Chromium с прокруткой (для страниц, которые рисуются скриптами)'
+        type: boolean
+        default: false
+      scroll_selector:
+        description: 'Что считать при прокрутке (по умолчанию — все ссылки)'
+        type: string
+        default: 'a'
 
 jobs:
   probe:
@@ -20,6 +28,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Поставить Chromium
+        if: inputs.browser
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
       - run: node scripts/probe.mjs
         env:
           PROBE_URLS: ${{ inputs.urls }}
+          PROBE_BROWSER: ${{ inputs.browser && '1' || '' }}
+          PROBE_SCROLL: ${{ inputs.scroll_selector }}

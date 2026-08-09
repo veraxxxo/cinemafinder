@@ -3,6 +3,12 @@
 // Запускается вручную (workflow «Probe sources») — по его логам чинятся парсеры.
 
 import { get, jsonLd, embeddedState, stripTags, mskDate } from './lib/util.mjs';
+import { loadPage, finish } from './lib/fetcher.mjs';
+
+// Яндекс Афиша и подобные рисуются скриптами: обычный запрос отдаёт 400 КБ
+// разметки и ноль времён. PROBE_BROWSER=1 гоняет те же URL через Chromium с
+// прокруткой — тем же способом, каким собирается расписание кино.
+const VIA_BROWSER = Boolean(process.env.PROBE_BROWSER);
 
 const date = mskDate(0);
 
@@ -28,10 +34,18 @@ for (const url of CANDIDATES) {
   console.log('\n' + '═'.repeat(78));
   console.log('→', url);
   try {
-    const res = await get(url, { retries: 1, timeout: 40000 });
-    const ct = res.headers.get('content-type') || '';
-    const body = await res.text();
-    console.log(`   HTTP ${res.status} | ${ct} | ${(body.length / 1024).toFixed(1)} KB`);
+    let body;
+    let ct = '';
+
+    if (VIA_BROWSER) {
+      body = await loadPage(url, { scrollFor: process.env.PROBE_SCROLL || 'a', label: url });
+      console.log(`   через браузер | ${(body.length / 1024).toFixed(1)} KB`);
+    } else {
+      const res = await get(url, { retries: 1, timeout: 40000 });
+      ct = res.headers.get('content-type') || '';
+      body = await res.text();
+      console.log(`   HTTP ${res.status} | ${ct} | ${(body.length / 1024).toFixed(1)} KB`);
+    }
 
     if (ct.includes('json')) {
       console.log('   JSON:', JSON.stringify(JSON.parse(body)).slice(0, 900));
@@ -49,8 +63,11 @@ for (const url of CANDIDATES) {
     const counts = {
       'ссылок /cinema/': (body.match(/href="[^"]*\/cinema\//g) || []).length,
       'ссылок /movie(s)/': (body.match(/href="[^"]*\/movies?\//g) || []).length,
+      'ссылок на события': (body.match(/href="[^"]*\/(concert|theatre|event|events|standup|sport|exhibition)\//g) || []).length,
+      'ссылок на площадки': (body.match(/href="[^"]*\/(places?|venues?)\//g) || []).length,
       'похоже на время HH:MM': (body.match(/>\s*[0-2]?\d:[0-5]\d\s*</g) || []).length,
       'ScreeningEvent': (body.match(/ScreeningEvent/g) || []).length,
+      'Event/Place в JSON': (body.match(/"@type"\s*:\s*"(Event|Place|MusicEvent|TheaterEvent)"/g) || []).length,
     };
     console.log('   ' + Object.entries(counts).map(([k, v]) => `${k}=${v}`).join(' | '));
 
@@ -61,3 +78,5 @@ for (const url of CANDIDATES) {
     console.log('   ОШИБКА:', err.message);
   }
 }
+
+if (VIA_BROWSER) await finish();
