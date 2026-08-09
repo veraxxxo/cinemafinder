@@ -103,6 +103,17 @@ test('страница делится на блоки «кинотеатр → �
   assert.equal(second[0].price, null, 'без цены — null, а не ноль');
 });
 
+test('время находится не только в span и не только текстом', () => {
+  // Ровно то, на чём разбор терял всё: браузер видел 49 элементов с
+  // временами, а старая регулярка требовала <span>…</span> без вложений.
+  const alt =
+    '<div class="session_time__x1">19:30</div>' +
+    '<a class="session_time"><span class="tick">21:05</span></a>' +
+    '<div class="session_price">от 700 \u20bd</div>';
+  assert.deepEqual(sessionsIn(alt).map((s) => s.time), ['19:30', '21:05']);
+  assert.equal(sessionsIn(alt)[1].price, 700, 'цена берётся из соседнего блока');
+});
+
 test('на странице без сеансов ничего не выдумывается', () => {
   assert.deepEqual(sessionsIn('<div>19:30</div>'), []);
   assert.deepEqual(cinemaBlocks('<p>пусто</p>'), []);

@@ -22,17 +22,30 @@ export const contentOf = (html) =>
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<(?:head|header|nav|footer)[\s\S]*?<\/(?:head|header|nav|footer)>/gi, '');
 
-/** Сеансы внутри куска разметки: время и, если указана, цена. */
+/**
+ * Сеансы внутри куска разметки: время и, если указана, цена.
+ *
+ * Опознаём по классу, а не по тегу. Прежняя версия требовала буквально
+ * <span class="…session_time…">19:30</span> — и молчала, если время лежало в
+ * другом теге или во вложенном элементе. Насколько это дорого стоило, видно
+ * из прогона 09.08: браузер насчитал на странице 49 элементов с временами,
+ * а разбор вытащил ноль.
+ */
 export function sessionsIn(chunk) {
   const out = [];
-  for (const m of chunk.matchAll(
-    /<span[^>]*class="[^"]*session_time[^"]*"[^>]*>\s*([0-2]?\d:[0-5]\d)\s*<\/span>([\s\S]{0,220}?)(?=<span[^>]*class="[^"]*session_time|$)/g,
-  )) {
-    const priceText = /session_price[^>]*>([^<]*)</.exec(m[2] || '');
+  const OPEN = /<[a-z]+[^>]*class="[^"]*session_time[^"]*"[^>]*>([\s\S]{0,400}?)(?=<[a-z]+[^>]*class="[^"]*session_time|$)/g;
+
+  for (const m of chunk.matchAll(OPEN)) {
+    const seg = m[1] || '';
+    // Время — первое, что стоит внутри элемента; вложенную разметку снимаем.
+    const time = (/([0-2]?\d:[0-5]\d)/.exec(stripTags(seg.slice(0, 160))) || [])[1];
+    if (!time) continue;
+
+    const priceText = /session_price[^>]*>([^<]*)</.exec(seg);
     const price = priceText
       ? Number((/\d[\d\s]*/.exec(priceText[1]) || [''])[0].replace(/\s/g, ''))
       : null;
-    out.push({ time: m[1], price: price || null });
+    out.push({ time, price: price || null });
   }
   return out;
 }
