@@ -10,7 +10,8 @@
   "scripts": {
     "cinemas": "node scripts/fetch-cinemas.mjs",
     "schedule": "node scripts/fetch-schedule.mjs",
-    "update": "npm run cinemas && npm run schedule",
+    "events": "node scripts/fetch-events.mjs",
+    "update": "npm run cinemas && npm run schedule && npm run events",
     "probe": "node scripts/probe.mjs",
     "serve": "npx --yes serve -l 8080 .",
     "test": "node scripts/test.mjs"

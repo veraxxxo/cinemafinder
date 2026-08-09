@@ -1,0 +1,122 @@
+name: Обновление данных (своя машина)
+
+# Тот же сбор, что и в облаке, но на раннере, поднятом на твоём компьютере.
+# Смысл один: запрос идёт с обычного адреса, и сайты афиш не отбивают его на
+# входе. Поэтому здесь подняты лимиты — больше дат, больше фильмов, больше
+# событий.
+#
+# Почему отдельный файл, а не переключатель в основном workflow: мы уже
+# наступали на это. Стоит указать `runs-on: self-hosted`, не подняв раннер, —
+# и джоба висит в очереди вечно, без ошибки, заодно блокируя своей группой
+# все остальные прогоны. Здесь облачный сбор остаётся нетронутым и продолжает
+# работать, даже если компьютер выключен.
+#
+# Безопасность: триггеров `pull_request` тут намеренно нет. Репозиторий
+# публичный, и без этого правила любой желающий мог бы прислать PR и
+# выполнить свой код на твоей машине.
+
+on:
+  schedule:
+    - cron: '0 * * * *'      # каждый час, пока компьютер включён
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'Сколько дат собрать'
+        type: string
+        default: '5'
+      movies:
+        description: 'Сколько фильмов на источник'
+        type: string
+        default: '80'
+      event_days:
+        description: 'На сколько дней собрать события'
+        type: string
+        default: '14'
+
+permissions:
+  contents: write
+
+concurrency:
+  # cancel-in-progress здесь именно true: если компьютер был выключен, в
+  # очереди не должна копиться стопка ночных запусков — нужен только свежий.
+  group: data-update-local
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: self-hosted
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Кинотеатры (OpenStreetMap)
+        continue-on-error: true
+        run: node scripts/fetch-cinemas.mjs
+
+      - name: Зависимости и браузер
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install chromium
+
+      - name: Расписание сеансов
+        id: schedule
+        continue-on-error: true
+        env:
+          DAYS: ${{ inputs.days || '5' }}
+          KA_MOVIE_LIMIT: ${{ inputs.movies || '80' }}
+          KM_MOVIE_LIMIT: ${{ inputs.movies || '60' }}
+        timeout-minutes: 25
+        run: node scripts/fetch-schedule.mjs
+
+      - name: События города
+        continue-on-error: true
+        env:
+          EVENT_DAYS: ${{ inputs.event_days || '14' }}
+        timeout-minutes: 10
+        run: node scripts/fetch-events.mjs
+
+      - name: Коммит
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          FILES="cinemas.json schedule.json geocode.json events.json"
+          for f in $FILES; do
+            if [ -f "data/$f" ]; then cp "data/$f" "$RUNNER_TEMP/"; fi
+          done
+
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git reset --hard origin/main
+            for f in $FILES; do
+              if [ -f "$RUNNER_TEMP/$f" ]; then cp "$RUNNER_TEMP/$f" "data/$f"; fi
+            done
+            git add data/
+
+            if git diff --cached --quiet; then
+              echo "Изменений нет."
+              exit 0
+            fi
+
+            git commit -m "data: сбор с домашней машины $(date -u '+%Y-%m-%d %H:%M UTC')"
+            if git push; then
+              echo "Запушено с попытки $attempt."
+              exit 0
+            fi
+            sleep $((attempt * 5))
+          done
+
+          echo "::error::Не удалось запушить данные за 3 попытки"
+          exit 1
+
+      - name: Итог
+        run: |
+          echo "### Сбор с домашней машины" >> $GITHUB_STEP_SUMMARY
+          node -e "
+            const L=[];
+            let s=null; try{s=require('./data/schedule.json')}catch{}
+            let e=null; try{e=require('./data/events.json')}catch{}
+            if(s) L.push('- Сеансов: **'+s.stats.shows+'**, фильмов: **'+s.stats.movies+'**, площадок: **'+s.stats.cinemas+'**');
+            if(e) L.push('- Событий: **'+e.stats.events+'** на **'+e.stats.places+'** площадках');
+            require('fs').appendFileSync(process.env.GITHUB_STEP_SUMMARY, L.join('\n')+'\n');
+          "
