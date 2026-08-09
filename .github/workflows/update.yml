@@ -31,12 +31,13 @@ concurrency:
 
 jobs:
   update:
-    # По умолчанию — облачные раннеры GitHub. Их адреса режут сайты афиш,
-    # поэтому при наличии своего сервера достаточно завести переменную
-    # RUNNER_LABEL со значением self-hosted (Settings → Secrets and variables
-    # → Actions → Variables). Код при этом не меняется.
-    runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
-    timeout-minutes: ${{ vars.RUNNER_LABEL && 90 || 25 }}
+    # Облачные раннеры GitHub. Раньше здесь была подстановка из переменной
+    # RUNNER_LABEL — задумка была переключаться на свой сервер без правок
+    # кода. Оказалось опасно: стоит завести переменную, не подняв раннер,
+    # и джоба встаёт в очередь навсегда, без единой ошибки в интерфейсе.
+    # Переезд на свой сервер — это осознанная правка одной строки здесь.
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
@@ -85,13 +86,10 @@ jobs:
           # Каждая страница через браузер — секунды, а их сотни. Берём немного
           # за прогон и опираемся на кэш: запуски идут дважды в сутки и
           # постепенно накрывают всю афишу, вместо того чтобы падать по лимиту.
-          DAYS: ${{ inputs.days || (vars.RUNNER_LABEL && '5' || '2') }}
-          # На своём сервере прокси не нужен и ограничения ни к чему:
-          # запросы идут с обычного адреса, сайты отвечают нормально.
-          KA_DIRECT: ${{ vars.RUNNER_LABEL && '1' || '' }}
-          KA_MOVIE_LIMIT: ${{ inputs.movies || (vars.RUNNER_LABEL && '60' || '8') }}
-          KM_MOVIE_LIMIT: ${{ inputs.movies || (vars.RUNNER_LABEL && '40' || '6') }}
-        timeout-minutes: ${{ vars.RUNNER_LABEL && 60 || 14 }}
+          DAYS: ${{ inputs.days || '2' }}
+          KA_MOVIE_LIMIT: ${{ inputs.movies || '8' }}
+          KM_MOVIE_LIMIT: ${{ inputs.movies || '6' }}
+        timeout-minutes: 14
         run: node scripts/fetch-schedule.mjs
 
       - name: Коммит
