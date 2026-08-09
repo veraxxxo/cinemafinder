@@ -16,6 +16,7 @@
 //   2. страницы отдельных фильмов — дороже, но переживает смену первой.
 
 import { loadPage, finish } from '../lib/fetcher.mjs';
+import { enabled as llmEnabled, extractShows } from '../lib/llm-extract.mjs';
 import {
   contentOf, cinemaBlocks, sessionsIn, stripTags,
 } from '../../parse-showtimes.js';
@@ -67,6 +68,19 @@ async function fromCitySchedule(date) {
       return shows;
     }
     console.warn(`[${id}] ${date}: общее расписание дало ${shows.length} — мало`);
+
+    // Страница загрузилась, а разбор пуст — похоже на смену вёрстки.
+    // Тогда за дело берётся модель, если ключ выдан.
+    if (llmEnabled()) {
+      const guessed = await extractShows(content, {
+        date,
+        hint: 'Это общее расписание кинотеатров города на дату.',
+      });
+      if (guessed.length >= 10) {
+        console.log(`[${id}] ${date}: ${guessed.length} сеансов разобрала модель`);
+        return guessed.map((g) => ({ ...g, url }));
+      }
+    }
   }
   return [];
 }
