@@ -34,10 +34,39 @@ export async function browserAvailable() {
 }
 
 /**
+ * Догружает лениво отрисовываемое содержимое: листает страницу вниз, пока
+ * число подходящих под селектор элементов растёт.
+ *
+ * Ради чего: на странице фильма киноафиши перечислено 78–110 кинотеатров, а
+ * времена сеансов в снятой разметке были всего у четырёх. Остальные
+ * дорисовываются по мере прокрутки, и без этого карта видела 13 площадок
+ * вместо сотни.
+ */
+async function harvest(page, selector, budgetMs) {
+  const started = Date.now();
+  let seen = await page.locator(selector).count();
+  let calm = 0;
+
+  while (Date.now() - started < budgetMs) {
+    await page.mouse.wheel(0, 20000).catch(() => {});
+    await page.waitForTimeout(350);
+    const now = await page.locator(selector).count();
+
+    if (now > seen) {
+      seen = now;
+      calm = 0;
+    } else if (++calm >= 3) {
+      break; // три прокрутки подряд без прибавки — дно достигнуто
+    }
+  }
+  return seen;
+}
+
+/**
  * Открывает страницу и возвращает разметку после рендера.
  * Картинки и шрифты режем — они ничего не дают, но тормозят загрузку.
  */
-export async function fetchPage(url, { timeout = 60000, waitFor = null } = {}) {
+export async function fetchPage(url, { timeout = 60000, waitFor = null, scrollFor = null } = {}) {
   const b = await ensure();
   const ctx = await b.newContext({
     userAgent: UA,
@@ -69,8 +98,13 @@ export async function fetchPage(url, { timeout = 60000, waitFor = null } = {}) {
       await page.waitForSelector(waitFor, { state: 'attached', timeout: 8000 }).catch(() => {});
     }
 
+    let harvested = null;
+    if (scrollFor) {
+      harvested = await harvest(page, scrollFor, Number(process.env.SCROLL_BUDGET_MS || 12000));
+    }
+
     const html = await page.content();
-    return { status, html };
+    return { status, html, harvested };
   } finally {
     await ctx.close();
   }

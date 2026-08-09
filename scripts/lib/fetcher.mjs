@@ -29,7 +29,13 @@ const PROXIES = [
 const CACHE_DIR = new URL('../../data/cache/', import.meta.url);
 const CACHE_TTL = Number(process.env.CACHE_TTL_MIN || 180) * 60000;
 
-const key = (url) => createHash('sha1').update(url).digest('hex').slice(0, 16);
+// Версия входит в ключ: когда меняется способ снятия страницы, старые записи
+// должны перестать подходить сами. Иначе после перехода на сбор с прокруткой
+// прогон переиспользовал бы разметку, снятую без неё, и выглядел бы так,
+// будто правка ничего не дала.
+const CACHE_VERSION = 'v2-scroll';
+
+const key = (url) => createHash('sha1').update(`${CACHE_VERSION}|${url}`).digest('hex').slice(0, 16);
 const execFileAsync = promisify(execFile);
 
 /**
@@ -108,7 +114,7 @@ const hostOf = (url) => {
  * Забирает страницу, перебирая способы, пока не получится живая разметка.
  * `expect` — регулярка, по которой отличаем настоящую страницу от заглушки.
  */
-export async function loadPage(url, { expect = null, waitFor = null, label = '' } = {}) {
+export async function loadPage(url, { expect = null, waitFor = null, scrollFor = null, label = '' } = {}) {
   const cached = await fromCache(url);
   if (cached) {
     console.log(`[fetch] ${label || url}: из кэша`);
@@ -139,8 +145,9 @@ export async function loadPage(url, { expect = null, waitFor = null, label = '' 
     attempts.push(['Chromium', async () => {
       if (browserOk === null) browserOk = await browserAvailable();
       if (!browserOk) throw new Error('браузер недоступен');
-      const { status, html } = await fetchPage(url, { waitFor });
+      const { status, html, harvested } = await fetchPage(url, { waitFor, scrollFor });
       if (status !== 200) throw new Error(`HTTP ${status}`);
+      if (harvested) console.log(`[fetch] ${label || url}: прокруткой набрано ${harvested} сеансов`);
       return html;
     }]);
   }

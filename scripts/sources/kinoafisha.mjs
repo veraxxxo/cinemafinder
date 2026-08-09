@@ -43,8 +43,17 @@ const slug = (s) =>
 // времени у сайта отличается от страницы к странице, и точный класс ловит не
 // везде. Ждать при этом надо появления в DOM, а не видимости, — см. коммент
 // про `state: 'attached'` в lib/browser.mjs.
-const page = (url, label) =>
-  loadPage(url, { expect: /session_time|\/cinema\//, waitFor: '[class*="session_time"]', label });
+const SESSION_SELECTOR = '[class*="session_time"]';
+
+const page = (url, label, scroll = false) =>
+  loadPage(url, {
+    expect: /session_time|\/cinema\//,
+    waitFor: SESSION_SELECTOR,
+    // Страницы фильмов листаем: залы с сеансами дорисовываются по прокрутке,
+    // и без неё из 78–110 кинотеатров времена были у четырёх.
+    scrollFor: scroll ? SESSION_SELECTOR : null,
+    label,
+  });
 
 /** Выполняет задачи пачками по `limit` штук, сохраняя порядок результатов. */
 async function pool(items, limit, run) {
@@ -90,7 +99,7 @@ export const cityOfCinemaUrl = (url) => CITY_IN_URL.exec(url || '')?.[1] || '?';
 
 /** Разбирает страницу одного фильма: блоки залов и времена внутри них. */
 async function oneMovie(movie, date) {
-  const content = contentOf(await page(`${movie.url}?date=${date}`, `${movie.title} ${date}`));
+  const content = contentOf(await page(`${movie.url}?date=${date}`, `${movie.title} ${date}`, true));
   const shows = [];
   const cities = new Map();
   let blocksTotal = 0;
