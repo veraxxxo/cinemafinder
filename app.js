@@ -8,19 +8,24 @@ const MOSCOW = [55.7522, 37.6156];
 const $ = (id) => document.getElementById(id);
 
 // Подложки карты. Плитки Яндекса подключать нельзя — это против их условий,
-// а JS API требует ключа с привязкой к домену. «Схема» подобрана как самая
-// близкая по виду: цветная и светлая.
+// а JS API требует ключа с привязкой к домену.
+//
+// Язык подписей задаётся самой подложкой, не нами: стандартные тайлы
+// OpenStreetMap подписывают объекты на местном языке (в Москве — по-русски),
+// а Carto почти везде латиницей. Поэтому по умолчанию — OSM.
 const OSM = '&copy; OpenStreetMap';
+const CARTO = `${OSM}, &copy; CARTO`;
 const BASEMAPS = {
-  'Схема': { url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', by: `${OSM}, &copy; CARTO` },
-  'Светлая': { url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', by: `${OSM}, &copy; CARTO` },
-  'Стандартная': { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', by: OSM },
+  'Русские названия': { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', by: OSM },
+  'Светлая (латиницей)': { url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', by: CARTO },
+  'Бледная (латиницей)': { url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', by: CARTO },
   'Спутник': {
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     by: '&copy; Esri',
   },
-  'Тёмная': { url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', by: `${OSM}, &copy; CARTO` },
+  'Тёмная (латиницей)': { url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', by: CARTO },
 };
+const DEFAULT_BASEMAP = 'Русские названия';
 
 // Сеансы после полуночи относятся к предыдущему вечеру: 00:40 → 24:40.
 const toMin = (hhmm) => {
@@ -628,10 +633,12 @@ function mergeShows(raw, date) {
     for (const [title, def] of Object.entries(BASEMAPS)) {
       layers[title] = L.tileLayer(def.url, { maxZoom: 19, attribution: def.by });
     }
-    const saved = localStorage.getItem('cf-basemap');
-    (layers[saved] || layers['Схема']).addTo(map);
+    // Ключ с номером: прежний выбор указывал на подложку с латиницей, и без
+    // смены ключа старые посетители остались бы на ней.
+    const saved = localStorage.getItem('cf-basemap-2');
+    (layers[saved] || layers[DEFAULT_BASEMAP]).addTo(map);
     L.control.layers(layers, null, { position: 'topright' }).addTo(map);
-    map.on('baselayerchange', (e) => localStorage.setItem('cf-basemap', e.name));
+    map.on('baselayerchange', (e) => localStorage.setItem('cf-basemap-2', e.name));
 
     cluster = L.markerClusterGroup({
       maxClusterRadius: 45,
