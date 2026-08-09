@@ -12,11 +12,11 @@ on:
       days:
         description: 'Сколько дат собрать'
         type: string
-        default: '2'
+        default: '3'
       movies:
         description: 'Сколько фильмов на источник'
         type: string
-        default: '8'
+        default: '30'
   push:
     paths:
       - 'scripts/**'
@@ -69,7 +69,14 @@ jobs:
         continue-on-error: true
         run: |
           pip install --quiet -r requirements.txt
-          scrapling install || true
+          # Раньше здесь стояло `|| true`, и провал установки уезжал в лог
+          # незаметно: Scrapling выключался на первом же запросе, а по шагу
+          # было «success». Теперь неудача проговаривается вслух.
+          if scrapling install; then
+            echo "Scrapling готов."
+          else
+            echo "::warning::scrapling install не удался — цепочка пойдёт сразу с Chromium"
+          fi
 
       - name: Поставить Chromium
         # kinoafisha отбивает обычные HTTP-запросы, но пускает настоящий
@@ -83,12 +90,12 @@ jobs:
         id: schedule
         continue-on-error: true
         env:
-          # Каждая страница через браузер — секунды, а их сотни. Берём немного
-          # за прогон и опираемся на кэш: запуски идут дважды в сутки и
-          # постепенно накрывают всю афишу, вместо того чтобы падать по лимиту.
-          DAYS: ${{ inputs.days || '2' }}
-          KA_MOVIE_LIMIT: ${{ inputs.movies || '8' }}
-          KM_MOVIE_LIMIT: ${{ inputs.movies || '6' }}
+          # Страницы фильмов грузятся в четыре вкладки сразу, мёртвое общее
+          # расписание из цепочки убрано, а закрытый наглухо хост отключается
+          # после двух провалов — освободившееся время уходит в охват.
+          DAYS: ${{ inputs.days || '3' }}
+          KA_MOVIE_LIMIT: ${{ inputs.movies || '30' }}
+          KM_MOVIE_LIMIT: ${{ inputs.movies || '20' }}
         timeout-minutes: 14
         run: node scripts/fetch-schedule.mjs
 

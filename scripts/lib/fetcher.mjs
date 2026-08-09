@@ -88,6 +88,22 @@ let browserOk = null;
 let scraplingOk = null;
 let proxyOrder = [...PROXIES.keys()];
 
+// Сколько раз подряд хост не дался ни одним способом. Перебор всей цепочки
+// стоит около полутора минут, и на наглухо закрытом сайте эти полторы минуты
+// повторяются на каждой странице, съедая время, которого не хватает живым
+// источникам. После двух полных провалов подряд хост считаем закрытым до
+// конца прогона; первый же успех обнуляет счётчик.
+const deadHosts = new Map();
+const HOST_GIVE_UP = Number(process.env.HOST_GIVE_UP || 2);
+
+const hostOf = (url) => {
+  try {
+    return new URL(url).host;
+  } catch {
+    return url;
+  }
+};
+
 /**
  * Забирает страницу, перебирая способы, пока не получится живая разметка.
  * `expect` — регулярка, по которой отличаем настоящую страницу от заглушки.
@@ -97,6 +113,11 @@ export async function loadPage(url, { expect = null, waitFor = null, label = '' 
   if (cached) {
     console.log(`[fetch] ${label || url}: из кэша`);
     return cached;
+  }
+
+  const host = hostOf(url);
+  if ((deadHosts.get(host) || 0) >= HOST_GIVE_UP) {
+    throw new Error(`${host} закрыт наглухо — пропускаю, чтобы не жечь время прогона`);
   }
 
   const attempts = [];
@@ -147,6 +168,7 @@ export async function loadPage(url, { expect = null, waitFor = null, label = '' 
         proxyOrder = [n, ...proxyOrder.filter((x) => x !== n)];
       }
       void idx;
+      deadHosts.delete(host);
       await toCache(url, html);
       return html;
     } catch (err) {
@@ -156,6 +178,7 @@ export async function loadPage(url, { expect = null, waitFor = null, label = '' 
     }
   }
 
+  deadHosts.set(host, (deadHosts.get(host) || 0) + 1);
   throw new Error(`не удалось загрузить ${url} ни одним способом`);
 }
 

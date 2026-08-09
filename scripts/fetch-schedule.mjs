@@ -13,6 +13,7 @@ import * as kinoafisha from './sources/kinoafisha.mjs';
 import * as kinomax from './sources/kinomax.mjs';
 import { mskDate, normName, nameTokens } from './lib/util.mjs';
 import { geocode, save as saveGeocode } from './lib/geocode.mjs';
+import { finish as closeFetcher } from './lib/fetcher.mjs';
 
 // kinoafisha отдаёт 403 на IP дата-центров: из Actions молча пропускается,
 // но локально (с домашнего адреса) добирает то, чего нет в KudaGo.
@@ -89,6 +90,11 @@ for (const source of SOURCES) {
     console.warn(`[schedule] ${source.id} упал: ${err.message}`);
   }
 }
+
+// Chromium держит процесс живым: пока он открыт, node не завершится, и джоба
+// упирается в таймаут уже после того, как всё собрано и записано. Закрываем
+// здесь — когда отработали все источники, и ровно один раз.
+await closeFetcher();
 
 // ── Нормализация ─────────────────────────────────────────────────────────────
 

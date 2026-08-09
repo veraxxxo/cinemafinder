@@ -60,7 +60,13 @@ export async function fetchPage(url, { timeout = 60000, waitFor = null } = {}) {
 
     if (waitFor) {
       // Расписание часто дорисовывается скриптом уже после загрузки.
-      await page.waitForSelector(waitFor, { timeout: 15000 }).catch(() => {});
+      //
+      // `state: 'attached'` здесь принципиально. По умолчанию Playwright ждёт
+      // ещё и видимости, а сеансы на будущие даты лежат в свёрнутых блоках:
+      // в DOM элемент есть и разбирается прекрасно, но видимым не станет.
+      // В прогоне 09.08 каждая страница второго дня стоила из-за этого ровно
+      // 15 секунд таймаута — при том что данные с неё снимались полностью.
+      await page.waitForSelector(waitFor, { state: 'attached', timeout: 8000 }).catch(() => {});
     }
 
     const html = await page.content();
