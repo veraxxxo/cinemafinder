@@ -36,6 +36,10 @@ const fromMin = (v) => {
 
 const norm = (s) => s.toLowerCase().replace(/ё/g, 'е').trim();
 
+/** Сегодняшняя дата по Москве — карта про московские кинотеатры. */
+const mskToday = (offsetDays = 0) =>
+  new Date(Date.now() + offsetDays * 86400000 + 3 * 3600000).toISOString().slice(0, 10);
+
 const state = {
   cinemas: [],
   cinemaById: new Map(),
@@ -118,13 +122,22 @@ async function load() {
     state.movieById = new Map(state.movies.map((m) => [m.id, m]));
     state.shows = (schedule.shows || []).map((s) => ({ ...s, min: toMin(s.t) }));
     state.dates = schedule.dates || [];
-    state.date = state.dates[0] || null;
+    // Открываемся на сегодня, если такие данные есть; иначе на ближайшей
+    // будущей дате, а если всё в прошлом — на последней собранной.
+    const today = mskToday();
+    state.date =
+      state.dates.find((d) => d === today) ||
+      state.dates.find((d) => d > today) ||
+      state.dates.at(-1) ||
+      null;
     $('src-list').textContent = (schedule.sources || []).map((s) => s.title).join(', ') || '—';
 
     const when = new Date(schedule.updated);
-    $('updated').textContent =
+    const stale = !state.dates.includes(mskToday());
+    $('updated').innerHTML =
       `${cinemas.length} кинотеатров · ${schedule.stats?.shows ?? 0} сеансов · ` +
-      `обновлено ${when.toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`;
+      `обновлено ${when.toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}` +
+      (stale ? ' · <b class="stale">данные за прошлый день</b>' : '');
   } else {
     state.onlyWithShows = false;
     $('only-with-shows').checked = false;
@@ -307,12 +320,21 @@ function buildDateChips() {
   box.innerHTML = '';
   if (!state.dates.length) { box.innerHTML = '<span class="meta">расписание не загружено</span>'; return; }
 
+  const today = mskToday();
+  const tomorrow = mskToday(1);
+
   for (const d of state.dates) {
     const dt = new Date(d + 'T12:00:00');
     const b = document.createElement('button');
-    const today = state.dates[0] === d;
-    b.innerHTML = `${today ? 'сегодня' : dt.toLocaleDateString('ru-RU', { weekday: 'short' })}` +
-      `<span>${dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</span>`;
+    // Подпись считается от настоящей даты, а не от позиции в списке: иначе
+    // на устаревших данных первая дата называлась «сегодня» и врала.
+    const label =
+      d === today ? 'сегодня' :
+      d === tomorrow ? 'завтра' :
+      d < today ? 'прошло' :
+      dt.toLocaleDateString('ru-RU', { weekday: 'short' });
+    b.innerHTML = `${label}<span>${dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</span>`;
+    b.classList.toggle('past', d < today);
     b.classList.toggle('on', d === state.date);
     b.onclick = () => {
       state.date = d;
@@ -320,6 +342,14 @@ function buildDateChips() {
       render();
     };
     box.appendChild(b);
+  }
+
+  // Данных на сегодня может не быть вовсе — об этом надо сказать прямо.
+  if (!state.dates.includes(today)) {
+    const note = document.createElement('span');
+    note.className = 'stale';
+    note.textContent = 'на сегодня данных нет — нажми «Обновить сеансы»';
+    box.appendChild(note);
   }
 }
 
@@ -478,8 +508,10 @@ function setupControls() {
     $('time-to').value = 1785;
     // Дата тоже часть фильтра — возвращаем на сегодня.
     if (state.dates.length) {
-      state.date = state.dates[0];
-      [...$('dates').children].forEach((el, i) => el.classList.toggle('on', i === 0));
+      const today = mskToday();
+      state.date = state.dates.find((d) => d === today) || state.dates[0];
+      const i = state.dates.indexOf(state.date);
+      [...$('dates').children].forEach((el, k) => el.classList?.toggle('on', k === i));
     }
     syncTime();
     markPreset($('time-presets').firstElementChild);

@@ -19,6 +19,15 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json' };
 
 // ── Фикстура: два кинотеатра, три фильма, разнесённые по времени сеансы ──────
+//
+// Даты вычисляются от сегодняшнего дня, а не зашиты: приложение подписывает
+// чипсы «сегодня/завтра» по настоящей дате, и на замороженном календаре
+// проверки развалились бы уже назавтра.
+
+const mskDay = (offset = 0) =>
+  new Date(Date.now() + offset * 86400000 + 3 * 3600000).toISOString().slice(0, 10);
+const TODAY = mskDay(0);
+const TOMORROW = mskDay(1);
 
 const CINEMAS = {
   count: 2,
@@ -31,7 +40,7 @@ const CINEMAS = {
 const SCHEDULE = {
   updated: '2026-08-08T09:00:00.000Z',
   sources: [{ id: 'test', title: 'Фикстура' }],
-  dates: ['2026-08-08', '2026-08-09'],
+  dates: [TODAY, TOMORROW],
   stats: { shows: 6, movies: 3, cinemas: 2 },
   movies: [
     { id: 'duna', title: 'Дюна', count: 3 },
@@ -40,12 +49,12 @@ const SCHEDULE = {
   ],
   extraCinemas: [],
   shows: [
-    { c: 'n1', m: 'duna', d: '2026-08-08', t: '10:00' },
-    { c: 'n1', m: 'duna', d: '2026-08-08', t: '19:30' },
-    { c: 'n1', m: 'solaris', d: '2026-08-08', t: '22:00' },
-    { c: 'n2', m: 'solaris', d: '2026-08-08', t: '11:15' },
-    { c: 'n2', m: 'stalker', d: '2026-08-08', t: '00:40' }, // ночной — это ещё 8-е
-    { c: 'n1', m: 'duna', d: '2026-08-09', t: '18:00' },
+    { c: 'n1', m: 'duna', d: TODAY, t: '10:00' },
+    { c: 'n1', m: 'duna', d: TODAY, t: '19:30' },
+    { c: 'n1', m: 'solaris', d: TODAY, t: '22:00' },
+    { c: 'n2', m: 'solaris', d: TODAY, t: '11:15' },
+    { c: 'n2', m: 'stalker', d: TODAY, t: '00:40' }, // ночной — это ещё сегодня
+    { c: 'n1', m: 'duna', d: TOMORROW, t: '18:00' },
   ],
 };
 
@@ -151,6 +160,14 @@ await page.waitForTimeout(200);
 check('подсказка сообщает, что фильма нет',
   await page.$$eval('#movie-suggest li.nores', (e) => e.length), 1);
 await page.fill('#movie-input', '');
+
+console.log('\nподписи дат считаются от настоящего дня');
+check('первая дата подписана «сегодня»',
+  await page.$eval('#dates button:nth-child(1)', (e) => e.textContent.replace(/\d.*/, '').trim()),
+  'сегодня');
+check('вторая — «завтра»',
+  await page.$eval('#dates button:nth-child(2)', (e) => e.textContent.replace(/\d.*/, '').trim()),
+  'завтра');
 
 console.log('\nпереключение даты');
 await page.click('#reset');
