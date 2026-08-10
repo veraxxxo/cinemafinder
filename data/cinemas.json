@@ -1,7 +1,7 @@
 {
- "updated": "2026-08-10T05:03:15.819Z",
+ "updated": "2026-08-10T14:41:01.774Z",
  "source": "data/cinemas-seed.csv + OpenStreetMap (Overpass) + Nominatim",
- "count": 161,
+ "count": 160,
  "seedTotal": 76,
  "unresolved": [
   "КАРО 6 Киргизия",
@@ -1627,17 +1627,6 @@
    "brand": "",
    "lat": 55.651262,
    "lon": 37.612279,
-   "address": "",
-   "website": "",
-   "phone": "",
-   "source": "osm"
-  },
-  {
-   "id": "n13935192537",
-   "name": "Cinema Park",
-   "brand": "",
-   "lat": 55.719939,
-   "lon": 37.525061,
    "address": "",
    "website": "",
    "phone": "",
