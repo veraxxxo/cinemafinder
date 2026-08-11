@@ -1,7 +1,7 @@
 {
- "updated": "2026-08-11T04:48:28.039Z",
+ "updated": "2026-08-11T14:39:02.782Z",
  "source": "data/cinemas-seed.csv + OpenStreetMap (Overpass) + Nominatim",
- "count": 160,
+ "count": 161,
  "seedTotal": 76,
  "unresolved": [
   "КАРО 6 Киргизия",
@@ -711,7 +711,7 @@
    "lat": 55.915221,
    "lon": 37.85534,
    "address": "",
-   "website": "kostino.com",
+   "website": "https://kostino.com/",
    "phone": "",
    "source": "osm"
   },
@@ -788,7 +788,7 @@
    "lat": 55.585218,
    "lon": 37.725968,
    "address": "",
-   "website": "http://www.luxorfilm.ru/cinema/vegas/",
+   "website": "https://www.luxorfilm.ru/cinema/vegas/",
    "phone": "",
    "source": "osm"
   },
@@ -799,7 +799,7 @@
    "lat": 55.912593,
    "lon": 37.586146,
    "address": "",
-   "website": "http://www.luxorfilm.ru/",
+   "website": "https://www.luxorfilm.ru/",
    "phone": "",
    "source": "osm"
   },
@@ -1627,6 +1627,17 @@
    "brand": "",
    "lat": 55.651262,
    "lon": 37.612279,
+   "address": "",
+   "website": "",
+   "phone": "",
+   "source": "osm"
+  },
+  {
+   "id": "n13935192537",
+   "name": "Cinema Park",
+   "brand": "",
+   "lat": 55.719939,
+   "lon": 37.525061,
    "address": "",
    "website": "",
    "phone": "",
