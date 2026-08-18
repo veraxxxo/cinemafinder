@@ -1,11 +1,10 @@
 {
- "updated": "2026-08-16T04:07:18.581Z",
+ "updated": "2026-08-18T04:05:28.992Z",
  "source": "data/cinemas-seed.csv + OpenStreetMap (Overpass) + Nominatim",
- "count": 160,
+ "count": 161,
  "seedTotal": 76,
  "unresolved": [
   "КАРО 6 Киргизия",
-  "КАРО 10 София",
   "КАРО 6 Будапешт",
   "КАРО 8 Саларис",
   "КАРО 9 Vegas Каширский",
@@ -254,6 +253,16 @@
    "phone": "",
    "source": "seed+osm",
    "osmName": "Каро 10 Щука"
+  },
+  {
+   "id": "sкаро-10-софия",
+   "name": "КАРО 10 София",
+   "lat": 55.512944,
+   "lon": 38.174889,
+   "address": "София, Раменский муниципальный округ, Московская область, Центральный федеральный округ, Россия",
+   "website": "https://karofilm.ru",
+   "brand": "",
+   "source": "seed+geo"
   },
   {
    "id": "n982386557",
