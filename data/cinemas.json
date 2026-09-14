@@ -1,5 +1,5 @@
 {
- "updated": "2026-09-13T08:29:13.122Z",
+ "updated": "2026-09-14T18:49:26.407Z",
  "source": "data/cinemas-seed.csv + OpenStreetMap (Overpass) + Nominatim",
  "count": 161,
  "seedTotal": 76,
@@ -720,7 +720,7 @@
    "lat": 55.915221,
    "lon": 37.85534,
    "address": "",
-   "website": "https://kostino.com/",
+   "website": "kostino.com",
    "phone": "",
    "source": "osm"
   },
@@ -797,7 +797,7 @@
    "lat": 55.585218,
    "lon": 37.725968,
    "address": "",
-   "website": "https://www.luxorfilm.ru/cinema/vegas/",
+   "website": "http://www.luxorfilm.ru/cinema/vegas/",
    "phone": "",
    "source": "osm"
   },
@@ -808,7 +808,7 @@
    "lat": 55.912593,
    "lon": 37.586146,
    "address": "",
-   "website": "https://www.luxorfilm.ru/",
+   "website": "http://www.luxorfilm.ru/",
    "phone": "",
    "source": "osm"
   },
